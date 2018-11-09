@@ -1,0 +1,22 @@
+{
+  "nodes":[
+    {"id":0, "name":"员工"},
+    {"id":1, "name":"客户"},
+    {"id":2, "name":"银行"},
+    {"id":3, "name":"个人业务"},
+    {"id":4, "name":"内部法规"},
+    {"id":5, "name":"行业法律"},
+    {"id":6, "name":"产品"}
+  ],
+  "links":[
+    {"source":0, "target":2, "name":"工作于"},
+    {"source":1, "target":3, "name":"办理业务"},
+    {"source":2, "target":3, "name":"提供业务"},
+    {"source":2, "target":6, "name":"推出产品"},
+    {"source":1, "target":6, "name":"使用产品"},
+    {"source":4, "target":0, "name":"监管"},
+    {"source":4, "target":3, "name":"提供说明"},
+    {"source":4, "target":6, "name":"提供说明"},
+    {"source":5, "target":2, "name":"监管"}
+  ]
+}

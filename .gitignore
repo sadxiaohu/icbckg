@@ -1,0 +1,6 @@
+idea
+.vs
+.vscode
+*.pyc
+static/log/
+baike.vectors.bin

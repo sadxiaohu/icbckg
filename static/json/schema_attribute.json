@@ -1,0 +1,80 @@
+[
+  {
+    "name": "银行属性",
+    "children":[
+      {"name": "中文全称", "value": 1},
+      {"name": "简称", "value": 1},
+      {"name": "英文缩写", "value": 1},
+      {"name": "机构性质", "value": 1},
+      {"name": "公司规模", "value": 1},
+      {"name": "经营范围", "value": 1},
+      {"name": "经营成果", "value": 1}
+    ]
+  },
+  {
+    "name": "员工属性",
+    "children": [
+      {"name": "姓名", "value": 1},
+      {"name": "编号", "value": 1},
+      {"name": "入职时间", "value": 1},
+      {"name": "目前职位", "value": 1},
+      {"name": "所在部门", "value": 1},
+      {"name": "业务范围", "value": 1}
+    ]
+  },
+  {
+    "name": "客户属性",
+    "children": [
+      {"name": "姓名", "value": 1},
+      {"name": "身份证号", "value": 1},
+      {"name": "注册时间", "value": 1},
+      {"name": "信用等级", "value": 1},
+      {"name": "已办理业务", "value": 1},
+      {"name": "已购产品", "value": 1}
+    ]
+  },
+  {
+    "name": "业务属性",
+    "children": [
+      {"name": "业务类型", "value": 1},
+      {"name": "服务对象", "value": 1},
+      {"name": "原则", "value": 1},
+      {"name": "所属部门", "value": 1},
+      {"name": "业务内容描述", "value": 1},
+      {"name": "有限期限", "value": 1},
+      {"name": "办理条件", "value": 1},
+      {"name": "所需凭证", "value": 1},
+      {"name": "办理步骤", "value": 1},
+      {"name": "最低额度", "value": 1},
+      {"name": "最高额度", "value": 1},
+      {"name": "计息方式", "value": 1}
+
+    ]
+  },
+  {
+    "name": "产品属性",
+    "children": [
+      {"name": "产品名称", "value": 1},
+      {"name": "研发部门", "value": 1},
+      {"name": "面向对象", "value": 1},
+      {"name": "发布平台", "value": 1},
+      {"name": "发布日期", "value": 1},
+      {"name": "有效期", "value": 1},
+      {"name": "使用条件", "value": 1},
+      {"name": "使用步骤", "value": 1},
+      {"name": "产品详细说明", "value": 1}
+    ]
+  },
+  {
+    "name": "法律法规属性",
+    "children": [
+      {"name": "法规名称", "value": 1},
+      {"name": "发布机构", "value": 1},
+      {"name": "监管对象", "value": 1},
+      {"name": "等级", "value": 1},
+      {"name": "发布时间", "value": 1},
+      {"name": "有效期", "value": 1},
+      {"name": "主要内容", "value": 1}
+    ]
+  }
+]

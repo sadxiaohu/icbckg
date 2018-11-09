@@ -1,0 +1,11 @@
+{% extends "components/layout.html" %}
+{% block main %}
+    <iframe id="iframe_schema_builder" src="http://schemabuilder.act.tunnel.qydev.com" frameborder="no" scrolling="no"></iframe>
+    <script>
+        var iframe_sb = $("#iframe_schema_builder");
+        iframe_sb.width("100%");
+        iframe_sb.height($(document.body).height()-$(".my_nav").innerHeight());
+        $(document.body).css("overflow-y","hidden");
+
+    </script>
+{% endblock %}

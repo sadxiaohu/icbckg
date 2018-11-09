@@ -1,0 +1,232 @@
+{% extends "components/layout.html" %}
+{% block main %}
+    <style>
+        .card{
+            width:1000px;
+        }
+        .container{
+            width: 99%;
+            height: 600px;
+        }
+    </style>
+
+    <div class="card" style="height: 600px">
+        <p>统计信息</p>
+        <div>
+            <h1>数据类型</h1>>
+
+        </div>
+    </div>
+
+    <div class="card" style="height: 500px">
+        <p>关系体系</p>
+        <div class="container" id="container_schema_relation"></div>
+    </div>
+
+    <div class="card">
+        <p>属性体系</p>
+        <div class="container" id="container_schema_attribute"></div>
+    </div>
+
+
+
+    {% include 'components/footer.html' %}
+
+    <script>
+
+    //类别体系
+    $.getJSON('/static/json/schema_category.json', function (data) {
+        var myChart = echarts.init(document.getElementById('container_schema_category'));
+        myChart.setOption(option = {
+            tooltip: {
+                trigger: 'item',
+                triggerOn: 'mousemove'
+            },
+            series: [
+                {
+                    type: 'tree',
+                    data: [data],
+                    symbolSize: 20,
+                    top: '1%',
+                    left: '5%',
+                    bottom: '1%',
+                    right: '18%',
+                    label: {
+                        normal: {
+                            position: 'left',
+                            verticalAlign: 'middle',
+                            align: 'right',
+                            fontSize: 15
+                        }
+                    },
+                    leaves: {
+                        label: {
+                            normal: {
+                                position: 'right',
+                                verticalAlign: 'middle',
+                                align: 'left'
+                            }
+                        }
+                    },
+                    expandAndCollapse: true,
+                    animationDuration: 550,
+                    animationDurationUpdate: 750
+
+                }
+            ]
+        });
+    });
+
+    //关系体系
+    $.getJSON('/static/json/schema_relation.json', function (result){
+        var myChart = echarts.init(document.getElementById('container_schema_relation'));
+        var categories = [];
+        result.nodes.forEach(function(node){
+            if ($.inArray(node.name,categories) < 0){
+                categories.push({
+                    name: node.name
+                });
+            }
+            node.category=node.name;
+            node.symbol = 'circle';
+            node.symbolSize = 15;
+            node.x = null;
+            node.y = null;
+            node.itemStyle = null;
+            node.label = {
+                normal: {
+                    show: true,
+                    position: 'right'
+                }
+            };
+        });
+        var colorPalette = ['#E01F54','#2980B9','#e05038','#009966','#9fa8a3',
+            '#89bdd3','#e6af4b','#d3758f','#dcc392','#2e4783',
+            '#333333','#ff6347','#a092f1','#0a915d','#7d4627',
+            '#6699FF','#ff6666','#3cb371','#d5b158','#38b6b6'
+        ];
+        myChart.setOption(option = {
+            color:colorPalette,
+            tooltip: {
+                formatter: function (params) {
+                    return params.data.name;
+                }
+            },
+            series:[{
+                type: 'graph',
+                layout: 'force',
+                data: result.nodes,
+                links: result.links,
+                categories: categories,
+                lineStyle: {
+                    normal: {
+                        color: 'source',
+                        width: 3,
+                        curveness: 0.2
+                    }
+                },
+                force: {
+                    repulsion: 1500,
+                    layoutAnimation: false
+                },
+                roam: true,
+                focusNodeAdjacency: true,
+                animationDuration: 2000
+            }],
+            textStyle: {
+                fontFamily: '微软雅黑',
+                fontSize: 18,
+                fontWeight:'bold'
+            }
+        });
+    });
+
+    //属性体系
+    $.getJSON('/static/json/schema_attribute.json', function (data) {
+        var myChart = echarts.init(document.getElementById('container_schema_attribute'));
+        var formatUtil = echarts.format;
+        function getLevelOption() {
+            return [
+                {
+                    itemStyle: {
+                        normal: {
+                            borderColor: '#555',
+                            borderWidth: 5,
+                            gapWidth: 5
+                        }
+                    }
+                },
+                {
+                    colorSaturation: [0.3, 0.4],
+                    itemStyle: {
+                        normal: {
+                            borderWidth: 5,
+                            gapWidth: 1,
+                            borderColorSaturation: 0.6
+                        }
+                    }
+                }
+            ];
+        }
+        myChart.setOption(option = {
+            tooltip: {
+                formatter: function (info) {
+                    var treePathInfo = info.treePathInfo;
+                    var treePath = [];
+                    for (var i = 0; i < treePathInfo.length; i++) {
+                        treePath.push(treePathInfo[i].name);
+                    }
+                    return [formatUtil.encodeHTML(treePath.join('/'))].join('');
+                }
+            },
+            series: [
+                {
+                    name:'属性',
+                    type:'treemap',
+                    visibleMin: 0,
+                    roam:false,
+                    top:"5%",
+                    bottom:"5%",
+                    zoomToNodeRatio:0.3,
+                    label: {
+                        normal: {
+                            show: true,
+                            formatter: '{b}',
+                            textStyle:{
+                                fontSize:12
+                            }
+                        }
+                    },
+                    upperLabel: {
+                        normal: {
+                            show: true,
+                            height: 30,
+                            textStyle:{
+                                fontSize:12
+                            }
+                        }
+                    },
+                    itemStyle: {
+                        normal: {
+                            borderColor: '#fff'
+                        }
+                    },
+                    breadcrumb:{
+                        top:0,
+                        height:25,
+                        itemStyle:{
+                            normal:{
+                                textStyle:{
+                                    fontSize:12
+                                }
+                            }
+                        }
+                    },
+                    levels: getLevelOption(),
+                    data: data
+                }
+            ]
+        });
+    });
+    </script>
+{% endblock %}

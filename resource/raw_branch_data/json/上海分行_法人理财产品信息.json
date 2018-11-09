@@ -1,0 +1,9 @@
+{
+    "description": "functiongetQueryString(){varstrReturnValue=\"\";varstrHref=window.location.href;varn=strHref.indexOf('?');if(n>0)strReturnValue=strHref.substr(n+1);returnstrReturnValue;}functionHtmlDecode(input){varconverter=document.createElement(\"DIV\");converter.innerHTML=input.replace(/&amp;/g,\"&\");varoutput;if('msie'==navigator.userAgent.toLowerCase().match(/msie/i))output=converter.innerText;elseoutput=converter.textContent;converter=null;returnoutput;}varqueryString=getQueryString();varframestr=HtmlDecode(\"/ICBCDynamicSite2/money/DisClose/List.aspx?width=490&amp;CSTTYPE=1&amp;MZONENO=1001\");if(queryString!=\"\"){queryString=queryString.replace('\"','&quot;');if(framestr.indexOf('?')>-1){framestr=framestr+\"&\"+queryString;}else{framestr=framestr+\"?\"+queryString;}}document.getElementById('C-1725066606').src=framestr;查看2013年8月4日前的理财产品披露信息销售对象为个人普通客户的理财产品信息披露报告可在门户网站直接查询；销售对象为其他类型客户的理财产品信息披露报告请点击报告标题，登录个人网上银行、企业网上银行进行查询。如果您尚未开通网上银行业务，个人客户请点击网上银行自助注册免费注册，法人客户请到我行营业网点进行办理。本页面部分内容为PDF格式文档，需使用专门的阅读软件AdobeAcrobatReader进行阅读。如果您尚未安装此软件，请访问Adobe官方网站下载。",
+    "taglist": [
+        "上海分行",
+        "特色业务",
+        "理财信息",
+        "法人理财产品信息"
+    ]
+}

@@ -1,0 +1,21 @@
+    <!--加载动画-->
+    <div class="spinner" style="z-index:100">
+        <div class="double-bounce1"></div>
+        <div class="double-bounce2"></div>
+    </div>
+
+    <script>
+
+        function loading_init(){
+            var loading_gif = $(".spinner");
+            var window_width = $(document.body).width();
+            var window_height = $(document.body).height();
+            var width = window_width*0.05;
+            loading_gif.width(width);
+            loading_gif.height(width);
+            loading_gif.css('margin-left',(window_width-width)/2);
+            loading_gif.css('margin-top',(window_height-width)/2);
+            return loading_gif;
+        }
+
+    </script>

@@ -1,0 +1,404 @@
+{% extends "components/layout.html" %}
+{% block main %}
+    <style>
+        .card{
+            width:80%;
+        }
+        .words_container{
+            padding: 1.5em;
+            text-align: left;
+            border-radius: 0.5em;
+            border: 1px dashed gray;
+            width:90%;
+            margin: auto;
+        }
+        .words_container .word_unit{
+            font-size: 1.2em;
+            cursor: pointer;
+            margin: 0.2em;
+            font-weight: bold;
+            display: inline;
+        }
+        .words_container .word_unit:hover{
+            color: gold!important;
+        }
+        .cate_button{
+            margin: 0.2em auto;
+            font-weight: bold;
+            font-size: 1.2em;
+        }
+        .btn_group_container{
+            float:right;
+        }
+    </style>
+
+
+    <div class="card">
+        <div id="word_op_btns" class="container btn_group_container" align="right">
+            <button type="button" class="btn btn-primary" onclick="merge_word()"  align="right">合并分词</button>
+            <button type="button" class="btn btn-success" onclick="split_word()"  align="right">切分分词</button>
+        </div>
+        <div id="alert_words" class="alert alert-danger" role="alert" hidden></div>
+        <p id="mian_title">待标记文本段落</p>
+        <p id="merge_notice_text" style="color:#F00" hidden>请选择合并分词，仅支持相邻分词的合并</p>
+        <p id="split_notice_text" style="color:#F00" hidden>每次仅支持单一词汇的切分,可多次切分</p>
+        <div class="words_container" id="sign_container"></div>
+        <div class="words_container" id="merge_container" hidden></div>
+        <div class="words_container" id="split_container" hidden></div>
+        <button id="submit_result_btn" class="btn btn-info mt-5 mx-5" type="button" onclick="submit_result()">提交结果</button>
+        <button id="reset_result_btn" class="btn btn-danger mt-2 mx-5" type="button" onclick="reset_result()">重新标记</button>
+        <button id="submit_word_btn" class="btn btn-info mt-5 mx-5" type="button" onclick="submit_word()" hidden>保存</button>
+        <button id="reset_word_btn" class="btn btn-danger mt-2 mx-5" type="button" onclick="reset_word()" hidden>重新选择</button>
+        <button id="cancel_word_btn" class="btn btn-warning mt-2 mx-5" type="button" onclick="cancel_word()" hidden>取消</button>
+        <div class="my-3"></div>
+    </div>
+
+    <!--类型选择模态框-->
+    <div class="modal fade" id="catePickModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">请选择实体类型</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body" id="catePickModalBody" style="text-align: left;padding: 1em"></div>
+            </div>
+        </div>
+    </div>
+
+    <!--分词切分模态框-->
+    <div class="modal fade" id="splitWordModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title">请使用空格进行切分</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body" id="splitWordModalBody" style="text-align: left;padding: 1em">
+                    <form>
+                      <div class="form-group">
+                        <label for="recipient-name" class="col-form-label">原分词:</label>
+                        <input type="text" class="form-control" id="recipient-name">
+                      </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" onclick="ok_split()">确定</button>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">取消</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% include 'components/footer.html' %}
+
+    <script>
+
+        var cate_list = [["银行", "#E01F54", "B1"],
+                        ["业务", "#2980B9", "B2"],
+                        ["产品", "#e05038", "B3"],
+                        ["法律法规", "#009966", "B4"],
+                        ["其他", "#2e4783", "B5"],
+                        ["无（清除标记）","#555555","O"]];
+
+        var word_clicked = undefined;
+        var result = undefined;
+        var doc_select_ori = undefined;
+        var doc_select = undefined;
+        var mode_word_option = undefined;
+        var merge_word_ids = [];
+        var split_words = [];
+        var copy_list = [];
+
+        for (var i = 0; i < cate_list.length; i++){
+            var cate_unit = $("<button class=\"btn btn-outline-secondary btn-block cate_button\" type=\"button\"></button>");
+            cate_unit.text(cate_list[i][0]);
+            cate_unit.css("color", cate_list[i][1]);
+            cate_unit.attr("num", i);
+            cate_unit.click(function(){
+                labelling_the_word(word_clicked, $(this).attr("num"));
+                $("#catePickModal").modal("hide");
+            });
+            $("#catePickModalBody").append(cate_unit);
+        }
+
+        toastr.options.positionClass = 'toast-bottom-right';
+        get_new_text();
+
+        function get_new_text(){
+            $.getJSON("/api/tagging/get_data/", function (data) {
+                doc_select = data;
+                doc_select_ori = data.concat();
+                show_new_words(data);
+            });
+        }
+
+        function show_new_words(word_list){
+            var container = $("#sign_container");
+            container.hide();
+            container.empty();
+            for (var i = 0; i < word_list.length; i++){
+                var word_unit = $("<div></div>");
+                word_unit.addClass("word_unit");
+                word_unit.text(word_list[i]);
+                labelling_the_word(word_unit, cate_list.length-1);
+                word_unit.click(function() {
+                    word_clicked = $(this);
+                    $("#catePickModal").modal();
+                });
+                container.append(word_unit);
+            }
+            container.fadeIn();
+        }
+
+        function labelling_the_word(unit, cate_num){
+            if (unit !== undefined) {
+                unit.css("color", cate_list[cate_num][1]);
+                unit.attr("label", cate_list[cate_num][2]);
+            }
+        }
+
+        function submit_result(){
+            result = {"words":[], "bios":[], "mod_words":[]};
+            $(".word_unit").each(function(){
+                if (!$(this).is(":hidden")){
+                    var word = $(this).text();
+                    result["words"].push(word);
+                    result["bios"].push($(this).attr("label"));
+                    if (doc_select_ori.indexOf(word) === -1){
+                        result["mod_words"].push(word);
+                    }
+                }
+            });
+            alert(result["words"]+"\n"+result["words"].length+"\n"+result["bios"]+"\n"+result["bios"].length);
+            alert(result["mod_words"]);
+            toastr.info('提交数据中，请稍候');
+            $.post("/api/tagging/submit_data/", {"data":JSON.stringify(result)}, function(data){
+                if (data === "OK") {
+                    toastr.success('提交数据成功');
+                }else{
+                    toastr.error('提交失败，后台连接错误');
+                }
+                get_new_text();
+            }).error(function(){
+                toastr.error('提交失败，后台连接错误');
+            });
+        }
+
+        function reset_result(){
+            $(".word_unit").each(function(){
+                labelling_the_word($(this), cate_list.length-1);
+            });
+        }
+
+        function show_merge_words(){
+            var container_merge = $("#merge_container");
+            container_merge.empty();
+            for (var i = 0; i < copy_list.length; i++){
+                var word_unit_merge = $("<div></div>");
+                word_unit_merge.addClass("word_unit");
+                word_unit_merge.attr("sequence_id", i);
+                word_unit_merge.text(copy_list[i]);
+                labelling_the_word(word_unit_merge, cate_list.length-1);
+                word_unit_merge.click(function() {
+                    var index = indexOf(merge_word_ids, $(this).attr("sequence_id"));
+                    if(index > -1){
+                        $(this).css("color", "#555555");
+                        removeItem(merge_word_ids, index);
+                    }else{
+                        $(this).css("color", "#e05038");
+                        merge_word_ids.push($(this).attr("sequence_id"));
+                    }
+                });
+                container_merge.append(word_unit_merge);
+            }
+            container_merge.fadeIn();
+        }
+
+        function show_split_words(){
+            var container_split = $("#split_container");
+            container_split.empty();
+            for (var i = 0; i < copy_list.length; i++){
+                var word_unit_split = $("<div></div>");
+                word_unit_split.addClass("word_unit");
+                word_unit_split.attr("sequence_id", i);
+                word_unit_split.text(copy_list[i]);
+                labelling_the_word(word_unit_split, cate_list.length-1);
+                word_unit_split.click(function() {
+                    word_clicked = $(this);
+                    $("#recipient-name").val(word_clicked.text());
+                    $("#splitWordModal").modal();
+                });
+                container_split.append(word_unit_split);
+            }
+            container_split.fadeIn();
+        }
+
+        function merge_word(){
+            mode_word_option = "m";
+
+            for(var i=0; i<doc_select.length; i++){
+                copy_list[i] = doc_select[i];
+            }
+            show_merge_words();
+
+            $("#mian_title").attr("hidden","true");
+            $("#merge_notice_text").removeAttr("hidden");
+            $("#submit_result_btn").attr("hidden","true");
+            $("#reset_result_btn").attr("hidden","true");
+            $("#word_op_btns").attr("hidden","true");
+            $("#submit_word_btn").removeAttr("hidden");
+            $("#reset_word_btn").removeAttr("hidden");
+            $("#cancel_word_btn").removeAttr("hidden");
+
+            $("#sign_container").attr("hidden","true");
+            $("#merge_container").removeAttr("hidden");
+        }
+
+        function split_word(){
+            mode_word_option = "s";
+            for(var i=0; i<doc_select.length; i++){
+                copy_list[i] = doc_select[i];
+            }
+            show_split_words();
+
+            $("#mian_title").attr("hidden","true");
+            $("#split_notice_text").removeAttr("hidden");
+            $("#submit_result_btn").attr("hidden","true");
+            $("#reset_result_btn").attr("hidden","true");
+            $("#word_op_btns").attr("hidden","true");
+            $("#submit_word_btn").removeAttr("hidden");
+            $("#reset_word_btn").removeAttr("hidden");
+            $("#cancel_word_btn").removeAttr("hidden");
+
+            $("#sign_container").attr("hidden","true");
+            $("#split_container").removeAttr("hidden");
+        }
+
+        function submit_word(){
+            if(mode_word_option === "m"){
+                if(merge_word_ids.length<2){
+                    $('#alert_words').text("请至少选择两个分词进行合并！");
+                    $('#alert_words').removeAttr("hidden");
+                }
+                else if(if_id_sequence(merge_word_ids)){
+                    var new_word = "";
+                    for(var i=0; i<merge_word_ids.length; i++){
+                        new_word += doc_select[merge_word_ids[i]];
+                    }
+                    doc_select[merge_word_ids[0]] = new_word;
+                    for(var i=parseInt(merge_word_ids[1]); i<doc_select.length-merge_word_ids.length+1; i++){
+                        doc_select[i] = doc_select[i+merge_word_ids.length-1];
+                    }
+                    doc_select.splice(i,merge_word_ids.length-1);
+                    show_new_words(doc_select);
+
+                    cancel_word();
+                }else{
+
+                    $('#alert_words').text("请选择相邻分词进行合并！");
+                    $('#alert_words').removeAttr("hidden");
+                }
+            }
+            else if(mode_word_option === "s"){
+                for(var i=0; i<copy_list.length; i++){
+                    doc_select[i] = copy_list[i];
+                }
+
+                show_new_words(doc_select);
+
+                cancel_word();
+            }
+        }
+
+        function cancel_word(){
+            merge_word_ids = [];
+            copy_list = [];
+
+            $(".words_container").attr("hidden","true");
+            $("#sign_container").removeAttr("hidden");
+            $("p").attr("hidden","true");
+            $("#mian_title").removeAttr("hidden");
+
+            $("#submit_result_btn").removeAttr("hidden");
+            $("#reset_result_btn").removeAttr("hidden");
+            $("#word_op_btns").removeAttr("hidden");
+            $("#submit_word_btn").attr("hidden","true");
+            $("#reset_word_btn").attr("hidden","true");
+            $("#cancel_word_btn").attr("hidden","true");
+            $("#alert_words").attr("hidden","true");
+        }
+
+        function reset_word(){
+            if(mode_word_option == "m"){
+                $(".word_unit").css("color", "#555555");
+                merge_word_ids = [];
+            }
+            else if(mode_word_option == "s"){
+                copy_list = [];
+                for(var i=0; i<doc_select.length; i++){
+                    copy_list[i] = doc_select[i];
+                }
+                show_split_words();
+            }
+        }
+
+        function ok_split(){
+            split_words = $("#recipient-name").val().split(" ");
+            for(var i=0; i<split_words.length; i++){
+                split_words[i] = split_words[i].trim();
+            }
+            $("#splitWordModal").modal("hide");
+
+            var click_word_index = parseInt(word_clicked.attr("sequence_id"));
+            for(var i=(copy_list.length+split_words.length-2); i>click_word_index+split_words.length-1; i--){
+                copy_list[i] = copy_list[i-split_words.length+1];
+            }
+            for(var i=0; i<split_words.length; i++){
+                copy_list[click_word_index+i] = split_words[i];
+            }
+
+            show_split_words();
+        }
+
+        <!--对数组的操作-->
+        function indexOf(arr, value){
+            for(var i = 0; i < arr.length; i++){
+                if(value === arr[i]){
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        function removeItem(arr, index){
+            if (index > -1) {
+                arr.splice(index, 1);
+            }
+        }
+
+        function if_id_sequence(arr){
+            for(var i=0; i<arr.length; i++){
+                arr[i] = parseInt(arr[i]);
+            }
+            arr.sort(function(a, b) { return a - b });
+            for(var i=0; i<arr.length-1; i++){
+                if(arr[i+1] !== arr[i]+1){
+                    return false;
+                }
+            }
+            return true;
+
+         // Trim() , Ltrim() , RTrim()
+        String.prototype.Trim = function(){
+            return this.replace(/(^\s*)|(\s*$)/g, "");
+        }
+        String.prototype.LTrim = function(){
+            return this.replace(/(^\s*)/g, "");
+        }
+        String.prototype.RTrim = function() {
+            return this.replace(/(\s*$)/g, "");
+        }
+    }
+    </script>
+{% endblock %}

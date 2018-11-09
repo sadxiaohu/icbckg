@@ -1,0 +1,66 @@
+{% extends "components/layout.html" %}
+{% block main %}
+    <style>
+        .card{
+            width:1000px;
+        }
+        .container{
+            width: 99%;
+            height: 1000px;
+        }
+    </style>
+
+
+    <div class="card" style="height: 1800px;width:1500px">
+        <p>类别体系</p>
+        <div class="container" id="container_schema_category"></div>
+    </div>
+
+    {% include 'components/footer.html' %}
+
+    <script>
+
+    //类别体系
+    $.getJSON('/static/json/schema_category_from_web_pages.json', function (data) {
+        var myChart = echarts.init(document.getElementById('container_schema_category'));
+        myChart.setOption(option = {
+            tooltip: {
+                trigger: 'item',
+                triggerOn: 'mousemove'
+            },
+            series: [
+                {
+                    type: 'tree',
+                    data: [data],
+                    symbolSize: 20,
+                    top: '1%',
+                    left: '5%',
+                    bottom: '1%',
+                    right: '18%',
+                    label: {
+                        normal: {
+                            position: 'left',
+                            verticalAlign: 'middle',
+                            align: 'right',
+                            fontSize: 15
+                        }
+                    },
+                    leaves: {
+                        label: {
+                            normal: {
+                                position: 'right',
+                                verticalAlign: 'middle',
+                                align: 'left'
+                            }
+                        }
+                    },
+                    expandAndCollapse: true,
+                    animationDuration: 550,
+                    animationDurationUpdate: 750
+
+                }
+            ]
+        });
+    });
+    </script>
+{% endblock %}

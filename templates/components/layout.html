@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>工行知识图谱 Demo</title>
+    <link rel="shortcut icon" href="/static/img/favicon.ico" type="image/x-icon" />
+    <link rel="stylesheet" type="text/css" href="/static/css/bootstrap4.min.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/font-awesome.min.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/loading0.css">
+    <link rel="stylesheet" type="text/css" href="/static/css/toastr.min.css">
+
+    <style>
+        html,body{
+            margin:0;
+            height:100%;
+            font-size: 16px;
+        }
+        body{
+            text-align: center;
+            font-family: 微软雅黑;
+            background-color: #bdc3c7;
+            color:#060A0E;
+        }
+        .card{
+            margin: 2em auto;;
+            background-color: white;
+            border-radius: 0.5em;
+            padding: 1em;
+        }
+        .card p{
+            font-size: 1.1em;
+            font-weight: bold;
+            padding: 1em;
+        }
+        th{
+            text-align: center;
+        }
+        button{
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <script type="text/javascript" src="http://www.echartsjs.com/gallery/vendors/echarts/echarts-all-3.js"></script>
+    <script src="/static/js/jquery-3.1.1.min.js"></script>
+    <script src="/static/js/popper.min.js"></script>
+    <script src="/static/js/bootstrap.min.js"></script>
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/js/toastr.min.js"></script>
+
+    {% include 'components/nav.html' %}
+    {% block main %}{% endblock %}
+
+
+
+</body>
+</html>

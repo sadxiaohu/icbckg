@@ -1,0 +1,292 @@
+{% extends "components/layout.html" %}
+{% block main %}
+
+    <link rel="stylesheet" type="text/css" href="/static/css/loading0.css">
+    <style>
+        #container{
+            width:100%;
+        }
+        th{
+            text-align: center;
+        }
+    </style>
+
+    {% include 'components/loading.html' %}
+
+
+    <!--图谱界面-->
+    <div id="container"></div>
+
+    <!--实体信息模态框-->
+    <div class="modal fade" id="entityInfoModal" tabindex="-1" role="dialog" aria-labelledby="entityInfoModalTitle" aria-hidden="true" >
+        <div class="modal-dialog" style="width: 70%">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="entityInfoModalTitle">详细信息</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <img id="entityInfoModalImage" style="padding:1em; width: 300px" src="/static/img/logo.jpg"/>
+                    <table class="table">
+                        <tbody id="entityInfoModalTable">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!--同名实体选择模态框-->
+    <div class="modal fade" id="entitySelectModal">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title" id="entitySelectModalTitle" >你是不是想查找的以下实体</h4>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <table class="table">
+                        <tbody id="entitySelectModalTable">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+    var window_width = $(document.body).width();
+    var window_height = $(document.body).height();
+    var my_nav = $(".my_nav");
+    var nav_offset = my_nav.innerHeight();
+
+    $("#container").height($(window).height()-nav_offset);
+    $.ajaxSetup({
+        error: function (e) {
+            console.log(e);
+            loading_gif.hide();
+            alert("找不到相关信息");
+            return false;
+        }
+    });
+
+    var loading_gif = loading_init();
+
+    var q = getUrlParam('q');
+    if (q) getData(q); else getData("牡丹中青旅卡");
+
+    //获取url中的参数
+    function getUrlParam(name) {
+        var reg = new RegExp("(^|&)" + name + "=([^&]*)(&|$)"); //构造一个含有目标参数的正则表达式对象
+        var r = window.location.search.substr(1).match(reg);  //匹配目标参数
+        if (r !== null) return decodeURI(r[2]); else return null; //返回参数值
+    }
+
+    //获取新数据
+    function getData(question, id){
+        loading_gif.show();
+        //获取数据
+        var url;
+        if (id === undefined) {
+            url = "/api/graph/graph/?q=" + question+"&signal=web";
+        }else{
+            url = "/api/graph/graph/?q=" + question + "&id=" + id+"&signal=web";
+        }
+        $.getJSON(url, function(result){
+            loading_gif.hide();
+            console.log(result);
+            if (!result){
+                alert("没有找到相关信息");
+                return;
+            }
+            if (result.nodes){
+                //如果得到的数据是图谱
+                refresh_graph(question, result);
+            }else if (result.entities) {
+                //如果得到的数据是同名实体列表
+                var table = $('#entitySelectModalTable');
+                $("#entitySelectModalTable tr").remove();
+                result.entities.forEach(function(entity){
+                    var e_name = entity['name'];
+                    var e_subname = (("subname" in entity)&&(entity['subname'].indexOf("NO_SUBNAME") === -1)) ? entity['subname'] : "";
+                    var e_cate = (("category" in entity)&&(entity['category'].indexOf("NONE") === -1)) ? "<"+entity['category']+">" : "";
+                    var item = $("<a></a>").text(e_name+e_subname+e_cate);
+                    item.css("cursor", "pointer");
+                    item.on('click', function(){
+                        $('#entitySelectModal').modal('hide');
+                        getData(question, entity['neoId']);
+                    });
+                    table.append($("<tr></tr>").append($("<td></td>").append(item)));
+                });
+                $('#entitySelectModal').modal();
+            }
+        });
+    }
+
+    var myChart = null;
+    //刷新mychart绘图页面
+    function refresh_graph(question, result){
+        //对mychart的初始化
+        if (myChart)
+            myChart.clear();
+        else {
+            myChart = echarts.init(document.getElementById('container'));
+            myChart.on('click', function (event) {
+                if (event.dataType === 'node') {
+                    var neoId = event.data.neoId;
+                    if (!neoId) return;
+                    var name = event.name;
+                    var title = $("#entityInfoModalTitle");
+                    var table = $("#entityInfoModalTable");
+                    var url = "/api/graph/entity?id=" + neoId;
+                    $.getJSON(url, function (result) {
+                        console.log(result);
+                        table.empty();
+                        title.text(name);
+                        for (var key in result) {
+                            table.append("<tr><td style='font-weight: bold'>" + key + "</td><td>" + result[key] + "</td></tr>");
+                        }
+                        $('#entityInfoModal').modal();
+                    });
+                }
+            });
+            myChart.on('dblclick', function (event) {
+                if (event.dataType === 'node') {
+                    var neoId = event.data.neoId;
+                    var name = event.name;
+                    getData(name, neoId);
+                }
+            });
+        }
+
+        //刷新绘图页面
+        var nodeSize = 80;
+        var dnodeSize = 19;
+        var fontSize = 14;
+        var nodes = [];
+        var links = [];
+        var categories = [];
+        var answerpath = result.answerpath;
+        result.nodes.forEach(function(node){
+            if ($.inArray(node.category,categories) < 0){
+                categories.push({
+                    name: node.category
+                });
+            }
+            node.symbol = 'circle';
+            node.symbolSize = nodeSize-node.value*dnodeSize;
+            node.x = null;
+            node.y = null;
+            node.itemStyle = null;
+            node.label = {
+                normal: {
+                    show: true,
+                    position: 'right'
+                }
+            };
+            nodes.push(node);
+        });
+        result.links.forEach(function(edge){
+            links.push(edge);
+        });
+        //点亮寻找的答案轨迹
+        nodes.forEach(function(node){
+            if ($.inArray(node.id,answerpath) >= 0)
+                node.itemStyle = {
+                    normal: {
+                        borderColor:'yellow',
+                        borderWidth:10
+                    }
+                };
+        });
+        links.forEach(function(link){
+            if (($.inArray(link.source,answerpath)>=0)&&($.inArray(link.target,answerpath)>=0))
+                link.lineStyle = {
+                    normal: {
+                        color: 'yellow',
+                        width: 10
+                    }
+                };
+        });
+        //开始绘制图像
+        var colorPalette = ['#E01F54','#2980B9','#e05038','#009966','#9fa8a3',
+            '#89bdd3','#e6af4b','#d3758f','#dcc392','#2e4783',
+            '#82b6e9','#ff6347','#a092f1','#0a915d','#7d4627',
+            '#6699FF','#ff6666','#3cb371','#d5b158','#38b6b6'
+        ];
+        var option = {
+            color:colorPalette,
+            backgroundColor:'white',
+            title: {
+                text: result.answer,
+                top: '1%',
+                left: '1%',
+                textStyle:{
+                    color:"#333333",
+                    fontSize: fontSize*1.8,
+                    fontWeight:'bolder'
+                },
+                subtext: '图中共有 '+result.nodes.length+' 个节点以及 '+result.links.length+' 条关系',
+                subtextStyle:{
+                    color:"#333333",
+                    fontSize: fontSize,
+                    fontWeight:'bold'
+                }
+            },
+            tooltip: {
+                formatter: function (params) {
+                    if (params.dataType === 'node')
+                        return params.data.category;
+                    else
+                        return params.data.name;
+                }
+            },
+            legend:[{
+                z:0,
+                data: categories,
+                bottom: '1%',
+                left: '1%',
+                orient: 'vertical',
+                itemGap: 12,
+                selectedMode:false,
+                textStyle:{
+                    color:'#333333',
+                    fontSize: fontSize*0.9,
+                    fontWeight:'bold'
+                }
+            }],
+            series:[{
+                type: 'graph',
+                layout: 'force',
+                data: nodes,
+                links: links,
+                categories: categories,
+                lineStyle: {
+                    normal: {
+                        color: 'source',
+                        width: 3,
+                        curveness: 0.2
+                    }
+                },
+                force: {
+                    repulsion: 1500,
+                    layoutAnimation: false
+                },
+                roam: true,
+                focusNodeAdjacency: true,
+                animationDuration: 2000
+            }],
+            textStyle: {
+                fontFamily: '微软雅黑',
+                fontSize: fontSize,
+                fontWeight:'bold'
+            }
+        };
+        myChart.setOption(option);
+    }
+    </script>
+
+{% endblock %}

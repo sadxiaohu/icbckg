@@ -1,0 +1,14 @@
+1、代码部分使用python3语言；
+2、绝大部分实体从网页和知识库中提取的，小部分实体是人工收集信息添加的；
+3、spider_from_web_demo：
+   getting_nodes_fromweb:表示该代码实现了从网页上提取实体和实体属性等信息，但是由于网页格式不完全统一，提取的信息还需要人工过滤，删减；
+   getting_nodes_fromdb:该段代码实现了从知识库中提取实体和实体属性等信息，实体来源于SCHEMA里给出的实体示例，但有一半的实体无法在知识库中查询到；
+4、extract_demo:
+   servicechannel_extract和serviceobject_extract作为样例，在实体集中建立关系；
+   servicetime_extract作为样例，从实体属性值中抽取更多信息。 
+5、schema_build_demo:
+   schema_build:根据结点的taglist，自动化构建schema（准确性不是很高）；
+   id2attr:在已生成的schema中（文件名为schema-new），每个叶子结点应具备的属性。
+   注：（1）先运行schema_build，后运行id2attr（id2attr需要使用schema_build运行结果）；
+       （2）data中schema文件为预生成的schema，由于未考虑tag的顺序问题，需要对schema进行进一步处理；
+       （3）结果在子文件夹data中，schema-new表示生成的schema,id2attr-new表示叶子节点对应的属性。

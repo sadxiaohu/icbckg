@@ -1,0 +1,341 @@
+{% extends "components/layout.html" %}
+{% block main %}
+
+    <style>
+        th{
+            text-align: center;
+        }
+    </style>
+{#    <input id="input-1" type="text"/>#}
+{#    <div id="text-1"></div>#}
+{#    <button id="btn-1">查询</button>#}
+{##}
+{##}
+{#    <script>#}
+{#    var btn = document.getElementById('btn-1');#}
+{#    btn.addEventListener('click', function () {#}
+{#        var input = document.getElementById('input-1');#}
+{#        var value = input.value;#}
+{##}
+{#        fetch('/api/test/?str=' + value)#}
+{#                .then(function(res){ return res.json()})#}
+{#                .then(function(data){#}
+{#                    if(data.code == 0){#}
+{#                        $('#text-1').text(data.len);#}
+{#                    }#}
+{##}
+{##}
+{#        })#}
+{#    })#}
+{##}
+{#    </script>#}
+
+
+
+    <div class="card" style="width: 90%">
+        <p>知识库实体统计</p>
+        <div class="container" id="container_entities" style="width: 80%;height: 400px"></div>
+        <p>知识库属性统计</p>
+        <div class="container" id="container_attrs" style="width: 90%;height: 400px"></div>
+        <p>知识库属性值高频词</p>
+        <table class="table table-hover" style="width: 80%;margin: auto">
+            <thead>
+                <tr>
+                    <th>服务对象</th>
+                    <th>服务渠道与时间</th>
+                    <th>卡片种类</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>金融机构 (64)</td>
+                    <td>网上银行	(117)</td>
+                    <td>牡丹人民币贷记卡 (70)</td>
+                </tr>
+                <tr>
+                    <td>企业客户 (32)</td>
+                    <td>企业网上银行	(48)</td>
+                    <td>牡丹双币贷记卡 (43)</td>
+                </tr>
+                <tr>
+                    <td>法人客户 (29)</td>
+                    <td>营业时间 (37)</td>
+                    <td>牡丹准贷记卡 (56)</td>
+                </tr>
+                <tr>
+                    <td>证券公司 (22)</td>
+                    <td>电话银行	(28)</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>社会团体 (12)</td>
+                    <td>营业网点	(21)</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>企事业单位 (12)</td>
+                    <td>7X24小时	(16)</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>电子银行客户 (8)</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td>网上银行客户 (5)</td>
+                    <td></td>
+                    <td></td>
+                </tr>
+
+            </tbody>
+        </table>
+    </div>
+    <div class="card" style="width: 90%">
+        <p>目前支持的问答类型</p>
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th>问题类型</th>
+                    <th>问题形式</th>
+                    <th>问题示例</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>阐释型</td>
+                    <td>实体 A 是什么？<br>什么是实体 A？</td>
+                    <td><a href="#" class="sampleQuestionItem">什么是活期存款</a><br>
+                        <a href="#" class="sampleQuestionItem">工银e支付是什么</a><br>
+                        <a href="#" class="sampleQuestionItem">什么是外汇买卖</a><br>
+                        <a href="#" class="sampleQuestionItem">工银信使服务是什么</a><br>
+                    </td>
+                </tr>
+                <tr>
+                    <td>列举型</td>
+                    <td>实体 A 的关系 B 有哪些？</td>
+                    <td><a href="#" class="sampleQuestionItem">小企业网贷通的服务对象有哪些</a><br>
+                        <a href="#" class="sampleQuestionItem">账户贵金属转换有哪些服务对象</a><br>
+                        <a href="#" class="sampleQuestionItem">牡丹亚泰卡有哪些卡片种类</a><br>
+                        <a href="#" class="sampleQuestionItem">个人通知存款有什么服务渠道</a><br>
+                        <a href="#" class="sampleQuestionItem">企业年金的服务渠道都有什么</a><br>
+                        <a href="#" class="sampleQuestionItem">外币利率掉期期权有哪些服务渠道</a><br>
+                    </td>
+                </tr>
+                <tr>
+                    <td>检索型</td>
+                    <td>实体 A 的属性 B 是什么？<br>实体 A 的 方法 B 是什么？</td>
+                    <td>
+                        <a href="#" class="sampleQuestionItem">第三方存管业务的办理时间</a><br>
+                        <a href="#" class="sampleQuestionItem">牡丹亚泰卡的发行范围是什么</a><br>
+                        <a href="#" class="sampleQuestionItem">基金服务的开通流程</a><br>
+                        <a href="#" class="sampleQuestionItem">通知存款有什么特色优势</a><br>
+                        <a href="#" class="sampleQuestionItem">集中式银期转账业务的使用窍门</a><br>
+                        <a href="#" class="sampleQuestionItem">个人网上银行的亮点功能有哪些</a><br>
+                        <a href="#" class="sampleQuestionItem">个人电话银行的风险提示</a><br>
+                        <a href="#" class="sampleQuestionItem">企业年金查询有哪些注意事项</a><br>
+                        <a href="#" class="sampleQuestionItem">企业网上银行的开通方法是什么</a><br>
+                        <a href="#" class="sampleQuestionItem">企业网银的登录的方法是什么</a><br>
+                    </td>
+                </tr>
+                <tr>
+                    <td>计算型</td>
+                    <td>实体A 的 数值型属性m <br>参与比较，计算，排序，统计</td>
+                    <td>
+                        <a href="#" class="sampleQuestionItem">1年期整存整取存款比2年期整存整取存款高多少</a><br>
+                        <a href="#" class="sampleQuestionItem">定期存款产品利率最高的</a><br>
+                        <a href="#" class="sampleQuestionItem">定期存款产品利率第三高的</a><br>
+                        <a href="#" class="sampleQuestionItem">定期存款产品利率高于2.6%的</a><br>
+                        <a href="#" class="sampleQuestionItem">通知存款产品利率最高的</a><br>
+                        <a href="#" class="sampleQuestionItem">通知存款产品利率低于1.25%的</a><br>
+                    </td>
+                </tr>
+                <tr>
+                    <td>类别检索型</td>
+                    <td>查询某类或具有某类关系的实体集合</td>
+                    <td>
+                        <a href="#" class="sampleQuestionItem">c::定期存款</a><br>
+                        <a href="#" class="sampleQuestionItem">c::贷款</a><br>
+                        <a href="#" class="sampleQuestionItem">c::安全服务</a><br>
+                        <a href="#" class="sampleQuestionItem">r::服务对象</a><br>
+                        <a href="#" class="sampleQuestionItem">r::卡片种类</a><br>
+                        <a href="#" class="sampleQuestionItem">r::服务渠道</a><br>
+                    </td>
+                </tr>
+                <tr>
+                    <td>流程型</td>
+                    <td>操作流程、系列特色等分步抽取</td>
+                    <td>
+                        <a href="#" class="sampleQuestionItem">个人电话银行的开通流程</a><br>
+                        <a href="#" class="sampleQuestionItem">存款服务的开通流程</a><br>
+                        <a href="#" class="sampleQuestionItem">理财服务的开办条件</a><br>
+                        <a href="#" class="sampleQuestionItem">第三方存管的特色优势</a><br>
+                    </td>
+                </tr>
+                <tr>
+                    <td>属性抽取型</td>
+                    <td>从实体A 的属性m 中抽取部分内容作为答案</td>
+                    <td>
+                        <a href="#" class="sampleQuestionItem">代理实物贵金属的交易品种有哪些</a><br>
+                        <a href="#" class="sampleQuestionItem">Android手机银行对手机有什么要求</a><br>
+                        <a href="#" class="sampleQuestionItem">小额结售汇支持的币种有哪些</a><br>
+                    </td>
+                </tr>
+                <tr>
+                    <td>模糊匹配型</td>
+                    <td>对问句中的实体和关系不明确时，分别进行模糊匹配 </td>
+                    <td>
+                        <a href="#" class="sampleQuestionItem">亚泰卡发行范围</a><br>
+                        <a href="#" class="sampleQuestionItem">代售保险业务是什么</a><br>
+                        <a href="#" class="sampleQuestionItem">2年期定期存款产品利率</a><br>
+                        <a href="#" class="sampleQuestionItem">牡丹卡发行范围单位</a><br>
+                        <a href="#" class="sampleQuestionItem">亚泰卡发行范围单位卡片种类功能特点</a><br>
+                    </td>
+                </tr>
+                <tr>
+                    <td>模糊匹配型</td>
+                    <td>对问句中的实体和关系不明确时，分别进行模糊匹配</td>
+                    <td>
+                        <a href="#" class="sampleQuestionItem">亚泰卡发行范围</a><br>
+                        <a href="#" class="sampleQuestionItem">代售保险业务是什么</a><br>
+                        <a href="#" class="sampleQuestionItem">2年期定期存款产品利率</a><br>
+                        <a href="#" class="sampleQuestionItem">牡丹卡发行范围单位</a><br>
+                        <a href="#" class="sampleQuestionItem">亚泰卡发行范围单位卡片种类功能特点</a><br>
+                    </td>
+                </tr>
+                <tr>
+                    <td>流程型</td>
+                    <td>涉及流程性的问题，给出其中一个步骤，按要求返回其余步骤</td>
+                    <td>
+                        <a href="#" class="sampleQuestionItem">在办理B股证券业务开户时，到证券公司申请开通账户后,然后该怎么做</a><br>
+                        <a href="#" class="sampleQuestionItem">在办理B股证券业务开户时，在去工行网点办理开户手续之前应该做什么</a><br>
+                        <a href="#" class="sampleQuestionItem">如果公司打算办理企业年金查询，除了成为工行企业客户外还应该怎么做</a><br>
+                        <a href="#" class="sampleQuestionItem">开通网银互联账户时，除了开通工行网银还应该做什么</a><br>
+                    </td>
+                </tr>
+                <tr>
+                    <td>知识库检索型</td>
+                    <td>问句中不包含实体，知识库整体检索问题相关答案 </td>
+                    <td>
+                        <a href="#" class="sampleQuestionItem">收不到余额变动提醒怎么办</a><br>
+                        <a href="#" class="sampleQuestionItem">密码忘记怎么办</a><br>
+                        <a href="#" class="sampleQuestionItem">密码输入三次错误怎么办</a><br>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="card" style="width: 90%">
+        <p>流程简介</p>
+        <img src="/static/img/pic1.png" style="width: 85%;margin: 1em auto"/>
+        <img src="/static/img/pic2.png" style="width: 85%;margin: 1em auto"/>
+        <img src="/static/img/pic3.png" style="width: 85%;margin: 1em auto"/>
+        <img src="/static/img/pic4.png" style="width: 85%;margin: 1em auto"/>
+    </div>
+
+    <script>
+        var main_input = $("#main_input");
+
+        $(".sampleQuestionItem").each(function(){
+            $(this).click(function(){
+                $("#sampleQuestionModal").modal("hide");
+                main_input.val($(this).text());
+                jump();
+            });
+        });
+
+        function jump(){
+            var question = $.trim(main_input.val());
+            if (question !== ""){
+                if (window.location.pathname==="/"){
+                    getData(question);
+                }
+                else{
+
+                    window.location.href = "/?q="+ encodeURIComponent(question);
+                }
+            }
+            main_input.val("");
+        }
+
+
+        echarts.init(document.getElementById("container_entities")).setOption(option = {
+            tooltip: {
+                trigger: 'item',
+                formatter: "{a} <br/>{b}: {c} ({d}%)"
+            },
+            legend: {
+                orient: 'vertical',
+                x: 'left',
+                data:['个人金融','公司业务','电子银行','受服务对象','金融市场专区','牡丹卡','公司','地理位置','资产托管','机构业务','投资银行','小微金融','企业年金','个人业务']
+            },
+            title:{
+                subtext: "共包含 1860 个实体与 2961 条关系",
+                x: "right"
+            },
+            series: [
+                {
+                    name:'实体个数',
+                    type:'pie',
+                    radius: ['20%', '70%'],
+                    itemStyle: {
+                        emphasis: {
+                            shadowBlur: 10,
+                            shadowOffsetX: 0,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        }
+                    },
+                    data:[
+                        {value:153, name:'个人金融'},
+                        {value:151, name:'公司业务'},
+                        {value:122, name:'电子银行'},
+                        {value:97, name:'受服务对象'},
+                        {value:85, name:'金融市场专区'},
+                        {value:73, name:'牡丹卡'},
+                        {value:69, name:'公司'},
+                        {value:53, name:'地理位置'},
+                        {value:27, name:'资产托管'},
+                        {value:23, name:'机构业务'},
+                        {value:15, name:'投资银行'},
+                        {value:9, name:'小微金融'},
+                        {value:4, name:'企业年金'},
+                        {value:3, name:'个人业务'}
+                    ]
+                }
+            ]
+        });
+
+        var colorPalette = ['#E01F54','#2980B9','#e05038','#009966','#9fa8a3',
+            '#89bdd3','#e6af4b','#d3758f','#dcc392','#2e4783',
+            '#82b6e9','#ff6347','#a092f1','#0a915d','#7d4627',
+            '#6699FF','#ff6666','#3cb371','#d5b158','#38b6b6'
+        ];
+
+        echarts.init(document.getElementById("container_attrs")).setOption(option = {
+            tooltip:{},
+            xAxis: {
+                name: '属性名',
+                data: ['服务对象', '业务简述', '特色优势', '服务渠道与时间', '开办条件', '功能特点', '操作指南', '注意事项', '开通流程', '业务简介', '风险提示', '名词解释', '联名单位', '卡片种类', '发行范围', '发布时间', '卡片图案', '名称', '常见问题', '产品价格', '申请办理'],
+                axisLabel: {
+                    show: true,
+                    rotate: 30
+                }
+            },
+            yAxis: {
+                name: '属性出现次数'
+            },
+            series: [{
+                name: "属性出现次数",
+                data: [356, 311, 248, 192, 174, 141, 113, 108, 107, 89, 86, 73, 73, 73, 73, 73, 73, 73, 68, 64, 50],
+                type: 'bar',
+                itemStyle: {
+                    normal: {
+                        color: function(params) { return colorPalette[params.dataIndex] }
+                    }
+                }
+            }]
+        });
+
+    </script>
+
+{% endblock %}
