@@ -1,0 +1,64 @@
+2018-11-09 22:15:22,980: INFO: running E:/icbckg/tools/word2vec_train/train.py
+2018-11-09 22:15:22,980: INFO: collecting all words and their counts
+2018-11-09 22:15:22,980: INFO: PROGRESS: at sentence #0, processed 0 words, keeping 0 word types
+2018-11-09 22:15:23,299: INFO: collected 46460 word types from a corpus of 1518762 raw words and 2588 sentences
+2018-11-09 22:15:23,299: INFO: Loading a fresh vocabulary
+2018-11-09 22:15:23,328: INFO: min_count=5 retains 14657 unique words (31% of original 46460, drops 31803)
+2018-11-09 22:15:23,328: INFO: min_count=5 leaves 1466600 word corpus (96% of original 1518762, drops 52162)
+2018-11-09 22:15:23,357: INFO: deleting the raw counts dictionary of 46460 items
+2018-11-09 22:15:23,358: INFO: sample=0.001 downsamples 35 most-common words
+2018-11-09 22:15:23,359: INFO: downsampling leaves estimated 1374627 word corpus (93.7% of prior 1466600)
+2018-11-09 22:15:23,387: INFO: estimated required memory for 14657 words and 200 dimensions: 30779700 bytes
+2018-11-09 22:15:23,387: INFO: resetting layer weights
+2018-11-09 22:15:23,555: INFO: training model with 8 workers on 14657 vocabulary and 200 features, using sg=0 hs=0 sample=0.001 negative=5 window=5
+2018-11-09 22:15:24,365: INFO: worker thread finished; awaiting finish of 7 more threads
+2018-11-09 22:15:24,365: INFO: worker thread finished; awaiting finish of 6 more threads
+2018-11-09 22:15:24,365: INFO: worker thread finished; awaiting finish of 5 more threads
+2018-11-09 22:15:24,371: INFO: worker thread finished; awaiting finish of 4 more threads
+2018-11-09 22:15:24,371: INFO: worker thread finished; awaiting finish of 3 more threads
+2018-11-09 22:15:24,372: INFO: worker thread finished; awaiting finish of 2 more threads
+2018-11-09 22:15:24,375: INFO: worker thread finished; awaiting finish of 1 more threads
+2018-11-09 22:15:24,378: INFO: worker thread finished; awaiting finish of 0 more threads
+2018-11-09 22:15:24,378: INFO: EPOCH - 1 : training on 1518762 raw words (1374318 effective words) took 0.8s, 1675057 effective words/s
+2018-11-09 22:15:25,233: INFO: worker thread finished; awaiting finish of 7 more threads
+2018-11-09 22:15:25,234: INFO: worker thread finished; awaiting finish of 6 more threads
+2018-11-09 22:15:25,234: INFO: worker thread finished; awaiting finish of 5 more threads
+2018-11-09 22:15:25,236: INFO: worker thread finished; awaiting finish of 4 more threads
+2018-11-09 22:15:25,240: INFO: worker thread finished; awaiting finish of 3 more threads
+2018-11-09 22:15:25,242: INFO: worker thread finished; awaiting finish of 2 more threads
+2018-11-09 22:15:25,244: INFO: worker thread finished; awaiting finish of 1 more threads
+2018-11-09 22:15:25,250: INFO: worker thread finished; awaiting finish of 0 more threads
+2018-11-09 22:15:25,250: INFO: EPOCH - 2 : training on 1518762 raw words (1374878 effective words) took 0.9s, 1582291 effective words/s
+2018-11-09 22:15:26,059: INFO: worker thread finished; awaiting finish of 7 more threads
+2018-11-09 22:15:26,059: INFO: worker thread finished; awaiting finish of 6 more threads
+2018-11-09 22:15:26,059: INFO: worker thread finished; awaiting finish of 5 more threads
+2018-11-09 22:15:26,065: INFO: worker thread finished; awaiting finish of 4 more threads
+2018-11-09 22:15:26,065: INFO: worker thread finished; awaiting finish of 3 more threads
+2018-11-09 22:15:26,066: INFO: worker thread finished; awaiting finish of 2 more threads
+2018-11-09 22:15:26,066: INFO: worker thread finished; awaiting finish of 1 more threads
+2018-11-09 22:15:26,075: INFO: worker thread finished; awaiting finish of 0 more threads
+2018-11-09 22:15:26,075: INFO: EPOCH - 3 : training on 1518762 raw words (1374469 effective words) took 0.8s, 1670483 effective words/s
+2018-11-09 22:15:26,921: INFO: worker thread finished; awaiting finish of 7 more threads
+2018-11-09 22:15:26,921: INFO: worker thread finished; awaiting finish of 6 more threads
+2018-11-09 22:15:26,921: INFO: worker thread finished; awaiting finish of 5 more threads
+2018-11-09 22:15:26,924: INFO: worker thread finished; awaiting finish of 4 more threads
+2018-11-09 22:15:26,928: INFO: worker thread finished; awaiting finish of 3 more threads
+2018-11-09 22:15:26,930: INFO: worker thread finished; awaiting finish of 2 more threads
+2018-11-09 22:15:26,930: INFO: worker thread finished; awaiting finish of 1 more threads
+2018-11-09 22:15:26,934: INFO: worker thread finished; awaiting finish of 0 more threads
+2018-11-09 22:15:26,934: INFO: EPOCH - 4 : training on 1518762 raw words (1374615 effective words) took 0.9s, 1602728 effective words/s
+2018-11-09 22:15:27,736: INFO: worker thread finished; awaiting finish of 7 more threads
+2018-11-09 22:15:27,736: INFO: worker thread finished; awaiting finish of 6 more threads
+2018-11-09 22:15:27,736: INFO: worker thread finished; awaiting finish of 5 more threads
+2018-11-09 22:15:27,737: INFO: worker thread finished; awaiting finish of 4 more threads
+2018-11-09 22:15:27,742: INFO: worker thread finished; awaiting finish of 3 more threads
+2018-11-09 22:15:27,743: INFO: worker thread finished; awaiting finish of 2 more threads
+2018-11-09 22:15:27,744: INFO: worker thread finished; awaiting finish of 1 more threads
+2018-11-09 22:15:27,749: INFO: worker thread finished; awaiting finish of 0 more threads
+2018-11-09 22:15:27,749: INFO: EPOCH - 5 : training on 1518762 raw words (1374596 effective words) took 0.8s, 1694515 effective words/s
+2018-11-09 22:15:27,749: INFO: training on a 7593810 raw words (6872876 effective words) took 4.2s, 1638767 effective words/s
+2018-11-09 22:15:27,749: INFO: saving Word2Vec object under test.model, separately None
+2018-11-09 22:15:27,749: INFO: not storing attribute vectors_norm
+2018-11-09 22:15:27,750: INFO: not storing attribute cum_table
+2018-11-09 22:15:27,857: INFO: saved test.model
+2018-11-09 22:15:27,857: INFO: storing 14657x200 projection weights into test.vector.bin
