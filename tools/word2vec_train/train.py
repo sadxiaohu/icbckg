@@ -34,6 +34,14 @@ def pre_process(file,file_new):
                 w = word.encode('utf-8')
                 line.append(w)
             new.write(conv_l_to_s(line)+'\n')
+def increment_training(model_path,incr_corpus,new_corpus):
+    model = Word2Vec.load(model_path)
+    pre_process(incr_corpus,new_corpus)
+    inter_dir = 'intermediate_data/'
+    model.build_vocab(LineSentence(inter_dir+new_corpus),update=True)
+    model.train(LineSentence(inter_dir+new_corpus),epochs=model.iter,total_examples=model.corpus_count)
+    model.save('test2model')
+    model.wv.save_word2vec_format('test2.vector.bin',binary=True)
 
 if __name__ == '__main__':
     t1 = time.time()
@@ -41,7 +49,7 @@ if __name__ == '__main__':
     file_new = 'corpus.txt'
     pre_process(file,file_new)
     i_file = 'intermediate_data/' + file_new
-    m_file = 'test.model'
+    m_file = 'testmodel'
     v_file = 'test.vector.bin'
     program = os.path.basename(sys.argv[0])  # 返回该程序的文件名
     for arg in sys.argv:
@@ -58,3 +66,5 @@ if __name__ == '__main__':
     model.wv.save_word2vec_format(v_file, binary=True)
     t2 = time.time()
     print "this procedure costs {} seconds".format(t2-t1)
+    # 增量学习
+    # increment_training(model_path='testmodel',incr_corpus='nonbanknews.txt',new_corpus='incr_corpus.txt')

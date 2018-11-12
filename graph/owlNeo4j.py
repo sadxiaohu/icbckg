@@ -91,68 +91,6 @@ def get_entity_list_by_fuzzy_name(name):#模糊实体名的匹配
                            score_map[kb['nodes'][num]['neoId']] = score+0.2
                         else:
                            score_map[kb['nodes'][num]['neoId']] = score
-            #if lens <= 5:
-              # print score,true_name
-        #     if amount > 10:
-        #         break
-        # if amount > 10:
-        #     break
-    # for name_full in name2num:
-    #     if (name in name_full) or (name_full in name) :
-    #             score = min(float(len(name))/len(name_full),float(len(name_full))/len(name))
-    #             if score >= threshold:
-    #               for num in name2num[name_full]:
-    #                 answer = kb['nodes'][num]
-    #                 answer['score']= score
-    #                 entity_list.append(answer)
-    #                 score_map[kb['nodes'][num]['neoId']] = score+0.2
-    #     else:
-    #         seg_list = serviceQA.segment(name)
-    #         seg_list_complete = []
-    #         flag = 0
-    #         for seg in seg_list:
-    #             seg_list_complete.append(seg.word)
-    #         for seg in seg_list_complete:
-    #             if seg in name_full:
-    #                 flag = 1
-    #                 break
-    #         if flag == 1:
-    #                 length = 0
-    #                 for seg in seg_list_complete:
-    #                     if seg in name_full:
-    #                         length += len(seg)
-    #                 score = min(1.0*length/len(name_full),1.0*length/len(name))
-    #                 if score >= threshold:
-    #                   for num in name2num[name_full]:
-    #                     answer = kb['nodes'][num].copy()
-    #                     answer['score']= score
-    #                     entity_list.append(answer)
-    #                     score_map[kb['nodes'][num]['neoId']] = score + 0.1
-    #         count = 0
-    #         if len(name) <= len(name_full):
-    #             for word in name:
-    #                 if word in name_full:
-    #                     count += 1
-    #             similarity = float(count*1.0/len(name_full))
-    #         else:
-    #             for word in name_full :
-    #                 if word in name:
-    #                     count += 1
-    #             similarity = float(count*1.0/len(name))
-    #         if flag == 1:
-    #             if similarity > score and similarity >= threshold:
-    #                 for num in name2num[name_full]:
-    #                     answer = kb['nodes'][num].copy()
-    #                     answer['score']= similarity
-    #                     entity_list.append(answer)
-    #                     score_map[kb['nodes'][num]['neoId']] = similarity # 匹配度的计算。。。
-    #         else:
-    #             if similarity >= threshold:
-    #                 for num in name2num[name_full]:
-    #                     answer = kb['nodes'][num].copy()
-    #                     answer['score']= similarity
-    #                     entity_list.append(answer)
-    #                     score_map[kb['nodes'][num]['neoId']] = similarity # 匹配度的计算。。。
     entity_list = sorted(entity_list, key=lambda l:score_map[l['neoId']], reverse=True)
     return entity_list[0:10] if len(entity_list)>10 else entity_list
 
@@ -206,6 +144,44 @@ def get_twoway_related_entities_by_id(neoid, max_num = 10):#返回一个实体�
             if len(related_entities) > max_num:
                 break
     return related_entities
+
+#动态规划实现莱文斯坦距离
+def levenshtein(string1,string2):
+    if len(string1) > len(string2):
+        string1,string2 = string2,string1
+    if len(string1) == 0:
+        return 0
+    if len(string2) == 0:
+        return 0
+    str1_length = len(string1) + 1
+    str2_length = len(string2) + 1
+    distance_matrix = [list(range(str2_length)) for x in range(str1_length)]
+    # print(distance_matrix)
+    for i in range(1,str1_length):
+        for j in range(1,str2_length):
+            deletion = distance_matrix[i-1][j] + 1  # 删除string1的第i个字符，也可看做将string1的第i个字符插入string2的后面
+            insertion = distance_matrix[i][j-1] + 1  # 将string2的第j个字符插入到string1的后面，也可以看做删除string2的第j个字符
+            substitution = distance_matrix[i-1][j-1]  # 替换
+            if string1[i-1] != string2[j-1]:   # 字符串的第i个字符和第j个字符相等
+                substitution += 1
+            distance_matrix[i][j] = min(insertion,deletion,substitution)
+    # print(distance_matrix[str1_length-1][str2_length-1])
+    # print(1-0.8)由于浮点数字精度问题，采用四舍五入
+    return round(1-round(distance_matrix[str1_length-1][str2_length-1])/max(len(string1),len(string2)),2)
+
+#取出得分最大的一组（或一个）state
+def max_state(states):
+    max_states = []
+    max_score = 0
+    for state in states:
+        if state['score'] > max_score:
+            max_score = state['score']
+    for state in states:
+        if state['score'] == max_score:
+            max_states.append(state)
+    entities = [state['header'] for state in max_states if state['header'] is not None]
+    paths = [state['path'] for state in max_states if state['header'] == entities[0]]
+    return {'ents': [entities[0]], 'path': paths[0]}
 
 def get_max_id_in_nodes():
     ids = [int(node['id']) for node in kb['nodes']]

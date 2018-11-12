@@ -25,7 +25,7 @@ queryword_list = [u'哪个',u'哪一个',u'怎么',u'怎么办',u'谁',u'如何'
 punctuation_list = [u'，',u'。',u'？',u'!',u'：',u'-',u'“',u'”',u',',u'.',u'?',u'!',u':',u'_',u'"']
 another_name_dict = {u"网银":u"网上银行",u"工行":u"中国工商银行",u"ATM":u"自动取款机",u"自助机":u"自动柜员机",u"自动取款机":u"自动柜员机",u"取款机":u"自动柜员机",u"柜员机":u"自动柜员机",u"灵通卡":u"牡丹卡",u"e时代卡":u"e卡",u"理财金卡":u"工银理财金账户卡",u"网点":u"营业网点"}  # 别名表
 
-def chinese_qa(question):
+def chinese_qa(question,switch):
     global out_question
     out_question = question
     if len(question) >= 3 and question.find('什么是') == 0:
@@ -53,102 +53,210 @@ def chinese_qa(question):
             seg_list[first_n_position] = temp
     logging.info('segment list: '+json.dumps(seg_list, ensure_ascii=False))
     # 问答有穷自动机
-    qa_result = automata(seg_list)
+    qa_result = automata(seg_list,switch,question)
     return qa_result
 
 
 # 问答有穷自动机 QA
-def automata(seg_list):
+def automata(seg_list,switch,question):
     threshold = 0.6  # 向量相似度匹配的状态转移阈值
-    threshold_3 = 0.5  # 文本答案选择匹配的状态转移阈值
+    threshold_2 = 0.2  # 关系相似度（编辑距离）的转移阈值
+    threshold_3 = 0.4  # 文本答案选择匹配的状态转移阈值
+    threshold_4 = 0.6  # 在只查找到实体的情况下，实体名长度占问题长度的比例转移阈值
     true_question = {}
     questionlist = []
     states = []
     caches = {}
-    for word in seg_list:
-        new_states = []
-        states.append({'header': None, 'tailer': None, 'available_words': [], 'path': [], 'score': 0})
-        for state in states:
-            state['available_words'].append(word)
-            # 对于START状态
-            if (state['header'] is None):
-                entity_name = "".join(state['available_words'])
-                same_name_entity_list = owlNeo4j.get_entity_list_by_name(entity_name)
-                for entity in same_name_entity_list:
-                    new_states.append({'header': entity, 'tailer': None, 'available_words': [], 'path': [], 'score': entity['score']})
-            # 对于非START状态
-            else:
-                if state['tailer'] is None:
-                    source = {'name': state['header']['name'], 'category': state['header']['category'],
-                              'neoId': state['header']['neoId']}
+    multi_question = question.split('？')
+    if multi_question[-1] == '':
+        multi_question = multi_question[:-1]
+    if len(multi_question) > 1:
+        return {'question': multi_question}
+    if switch is False:
+        count = 0
+        label = 1
+        for word in seg_list:
+            new_states = []
+            states.append({'header': None, 'tailer': None, 'available_words': [], 'path': [], 'score': 0})
+            for state in states:
+                state['available_words'].append(word)
+                # 对于START状态
+                if (state['header'] is None):
+                    entity_name = "".join(state['available_words'])
+                    same_name_entity_list = owlNeo4j.get_entity_list_by_name(entity_name)
+                    for entity in same_name_entity_list:
+                        new_states.append(
+                            {'header': entity, 'tailer': None, 'available_words': [], 'path': [], 'score': 1})
+                # 对于非START状态
                 else:
-                    source = state['tailer']
-                if source['neoId'] is None:  # neoId is None 意味着路径走到了一个不可跳转的状态
-                    continue
-                if source['neoId'] not in caches:  # 整理这个实体的关系与属性集，加入到缓存中等待使用
-                    caches[source['neoId']] = []
-                    relations = owlNeo4j.get_oneway_related_entities_by_id(source['neoId'])
-                    for relation in relations:  # 添加关系
-                        caches[source['neoId']].append(relation)
-                    props = owlNeo4j.get_entity_info_by_id(source['neoId'])
-                    for prop in props:  # 添加属性，如果已经有同名关系出现，则该属性不添加
-                        if any(prop == relation['name'] for relation in caches[source['neoId']]):
-                            continue
-                        flag = 0
-                        if prop in keyword_list:
-                            content = props[prop]
-                            for sequence in sequence_list:
-                                if sequence[0] in content:
-                                    target_sequence = sequence
-                                    flag = 1
-                                    break
-                        if flag == 1 :
-                            num = 0
-                            id = 0
-                            for i in range(len(target_sequence)):
-                                num += 1
-                                if target_sequence[i] not in content:
-                                    num = num - 1
-                                    break
-                            for i in range(num):
-                                if i < num-1:
-                                    start = content.index(target_sequence[i])
-                                    end = content.index(target_sequence[i+1])
-                                    #target_content = content[start:end] if (end-start) <= 10 else content[start:start+10]+'...'
-                                    caches[source['neoId']].append(
-                                    {'name': prop, 'target_category': '属性值', 'target_name': content[start:end], 'target_neoId': 100000+id})
-                                    id += 1
+                    if state['tailer'] is None:
+                        source = {'name': state['header']['name'], 'category': state['header']['category'],
+                                  'neoId': state['header']['neoId']}
+                    else:
+                        source = state['tailer']
+                    if source['neoId'] is None:  # neoId is None 意味着路径走到了一个不可跳转的状态
+                        continue
+                    if source['neoId'] not in caches:  # 整理这个实体的关系与属性集，加入到缓存中等待使用
+                        caches[source['neoId']] = []
+                        relations = owlNeo4j.get_oneway_related_entities_by_id(source['neoId'])
+                        for relation in relations:  # 添加关系
+                            caches[source['neoId']].append(relation)
+                        props = owlNeo4j.get_entity_info_by_id(source['neoId'])
+                        for prop in props:  # 添加属性，如果已经有同名关系出现，则该属性不添加
+                            if any(prop == relation['name'] for relation in caches[source['neoId']]):
+                                continue
+                            flag = 0
+                            if prop in keyword_list:
+                                content = props[prop]
+                                for sequence in sequence_list:
+                                    if sequence[0] in content:
+                                        target_sequence = sequence
+                                        flag = 1
+                                        break
+                            if flag == 1:
+                                num = 0
+                                id = 0
+                                for i in range(len(target_sequence)):
+                                    num += 1
+                                    if target_sequence[i] not in content:
+                                        num = num - 1
+                                        break
+                                for i in range(num):
+                                    if i < num - 1:
+                                        start = content.index(target_sequence[i])
+                                        end = content.index(target_sequence[i + 1])
+                                        # target_content = content[start:end] if (end-start) <= 10 else content[start:start+10]+'...'
+                                        caches[source['neoId']].append(
+                                            {'name': prop, 'target_category': '属性值', 'target_name': content[start:end],
+                                             'target_neoId': 100000 + id})
+                                        id += 1
+                                    else:
+                                        start = content.index(target_sequence[i])
+                                        # target_content = content[start:] if len(content[start:]) <= 10 else content[start:start+10]+'...'
+                                        caches[source['neoId']].append(
+                                            {'name': prop, 'target_category': '属性值', 'target_name': content[start:],
+                                             'target_neoId': 100000 + id})
+                                        id += 1
+                            else:
+                                # target_content = str(props[prop]) if len(str(props[prop])) <= 10 else str(props[prop])[0:10]+'...'
+                                caches[source['neoId']].append(
+                                    {'name': prop, 'target_category': '属性值', 'target_name': props[prop],
+                                     'target_neoId': None})
+                    # 对于所有关系属性逐个进行相似度匹配, 大于阈值就进行状态转移
+                    link2state_map = {}
+                    for link in caches[source['neoId']]:
+                        score = serviceWord2vec.get_similarity(state['available_words'], list(jieba.cut(link['name'])))
+                        if state['available_words'] == list(jieba.cut(link['name'])):
+                            score = 1.0
+                        if score >= threshold:
+                            if owlNeo4j.levenshtein(link['name'], ''.join(state['available_words'])) >= threshold_2 or (
+                                    u'是什么' == ''.join(state['available_words'])):
+                                value = state['header']['score'] * score
+                                question = state['header']['name'] + '的' + link['name'] + '是什么'
+                                if question not in true_question:
+                                    true_question[question] = value
                                 else:
-                                    start = content.index(target_sequence[i])
-                                    #target_content = content[start:] if len(content[start:]) <= 10 else content[start:start+10]+'...'
-                                    caches[source['neoId']].append(
-                                    {'name': prop, 'target_category': '属性值', 'target_name': content[start:], 'target_neoId': 100000+id})
-                                    id += 1
-                        else:
-                            #target_content = str(props[prop]) if len(str(props[prop])) <= 10 else str(props[prop])[0:10]+'...'
-                            caches[source['neoId']].append(
-                                {'name': prop, 'target_category': '属性值', 'target_name': props[prop], 'target_neoId': None})
-                # 对于所有关系属性逐个进行相似度匹配, 大于阈值就进行状态转移
-                link2state_map = {}
-                # count = 0
-                for link in caches[source['neoId']]:
-                    score = serviceWord2vec.get_similarity(state['available_words'], list(jieba.cut(link['name'])))
-                    if state['available_words'] == list(jieba.cut(link['name'])):
-                        score = 1.0
-                    if score == 1.0 and state['header']['score'] == 1.0:
+                                    if value > true_question[question]:
+                                        true_question[question] = value
+            states += new_states
+        if true_question is not None:
+            true_question = list(sorted(true_question.items(), key=lambda x: x[1], reverse=True))
+            for question in true_question:
+                questionlist.append(str(label) + '.' + question[0])
+                label += 1
+    else:
+        count = 1
+        seg_list = seg_list[1:]
+        for word in seg_list:
+            logging.info("seg_list:" + '/'.join(seg_list))
+            new_states = []
+            states.append({'header': None, 'tailer': None, 'available_words': [], 'path': [], 'score': 0})
+            for state in states:
+                state['available_words'].append(word)
+                # 对于START状态
+                if (state['header'] is None):
+                    entity_name = "".join(state['available_words'])
+                    same_name_entity_list = owlNeo4j.get_entity_list_by_name(entity_name)
+                    for entity in same_name_entity_list:
+                        new_states.append(
+                            {'header': entity, 'tailer': None, 'available_words': [], 'path': [], 'score': 1})
+                # 对于非START状态
+                else:
+                    if state['tailer'] is None:
+                        source = {'name': state['header']['name'], 'category': state['header']['category'],
+                                  'neoId': state['header']['neoId']}
+                    else:
+                        source = state['tailer']
+                    if source['neoId'] is None:  # neoId is None 意味着路径走到了一个不可跳转的状态
+                        continue
+                    if source['neoId'] not in caches:  # 整理这个实体的关系与属性集，加入到缓存中等待使用
+                        caches[source['neoId']] = []
+                        relations = owlNeo4j.get_oneway_related_entities_by_id(source['neoId'])
+                        for relation in relations:  # 添加关系
+                            caches[source['neoId']].append(relation)
+                        props = owlNeo4j.get_entity_info_by_id(source['neoId'])
+                        for prop in props:  # 添加属性，如果已经有同名关系出现，则该属性不添加
+                            if any(prop == relation['name'] for relation in caches[source['neoId']]):
+                                continue
+                            flag = 0
+                            if prop in keyword_list:
+                                content = props[prop]
+                                for sequence in sequence_list:
+                                    if sequence[0] in content:
+                                        target_sequence = sequence
+                                        flag = 1
+                                        break
+                            if flag == 1:
+                                num = 0
+                                id = 0
+                                for i in range(len(target_sequence)):
+                                    num += 1
+                                    if target_sequence[i] not in content:
+                                        num = num - 1
+                                        break
+                                for i in range(num):
+                                    if i < num - 1:
+                                        start = content.index(target_sequence[i])
+                                        end = content.index(target_sequence[i + 1])
+                                        # target_content = content[start:end] if (end-start) <= 10 else content[start:start+10]+'...'
+                                        caches[source['neoId']].append(
+                                            {'name': prop, 'target_category': '属性值', 'target_name': content[start:end],
+                                             'target_neoId': 100000 + id})
+                                        id += 1
+                                    else:
+                                        start = content.index(target_sequence[i])
+                                        # target_content = content[start:] if len(content[start:]) <= 10 else content[start:start+10]+'...'
+                                        caches[source['neoId']].append(
+                                            {'name': prop, 'target_category': '属性值', 'target_name': content[start:],
+                                             'target_neoId': 100000 + id})
+                                        id += 1
+                            else:
+                                # target_content = str(props[prop]) if len(str(props[prop])) <= 10 else str(props[prop])[0:10]+'...'
+                                caches[source['neoId']].append(
+                                    {'name': prop, 'target_category': '属性值', 'target_name': props[prop],
+                                     'target_neoId': None})
+                    # 对于所有关系属性逐个进行相似度匹配, 大于阈值就进行状态转移
+                    link2state_map = {}
+                    for link in caches[source['neoId']]:
+                        score = serviceWord2vec.get_similarity(state['available_words'], list(jieba.cut(link['name'])))
+                        if state['available_words'] == list(jieba.cut(link['name'])):
+                            score = 1.0
+                        if score == 1.0 and state['header']['score'] == 1.0:
+                            # count += 1
                             # 如果之前没添加过同名关系，直接进行状态转移，记录跳转路径
                             if link['name'] not in link2state_map:
-                                new_path = [step for step in state['path']]
-                                if type(link['target_name'] == str) and len(link['target_name']) > 10:
-                                    name = link['target_name'][0:10]+'...'
+                                new_path = [step for step in state['path']]  # 用于处理多跳问题
+                                if type(link['target_name']) == str and len(link['target_name']) > 10:
+                                    name = link['target_name'][0:10] + '...'
                                 else:
                                     name = link['target_name']
                                 target = {'name': name, 'category': link['target_category'],
-                                          'neoId': link['target_neoId'],'title':link['target_name']}
+                                          'neoId': link['target_neoId'], 'title': link['target_name']}
                                 new_path.append([source, link['name'], target])
                                 new_score = state['score'] * (1 + score - threshold)
                                 new_states.append(
-                                    {'header': state['header'], 'tailer': target, 'available_words': [], 'path': new_path,
+                                    {'header': state['header'], 'tailer': target, 'available_words': [],
+                                     'path': new_path,
                                      'score': new_score})
                                 link2state_map[link['name']] = len(new_states) - 1
                             # 如果之前已经添加过一个同名关系，说明此关系是多值类(比如：知名校友)，直接把此关系追加到同名关系上
@@ -158,135 +266,78 @@ def automata(seg_list):
                                 new_tailer['neoId'] = None  # 如果此关系是多值类，则它不能再进行状态转移，所以把tailer neoId标记为None
                                 new_states[state_num]['tailer'] = new_tailer
                                 if type(link['target_name'] == str) and len(link['target_name']) > 10:
-                                    name = link['target_name'][0:10]+'...'
-                                else :
+                                    name = link['target_name'][0:10] + '...'
+                                else:
                                     name = link['target_name']
                                 target = {'name': name, 'category': link['target_category'],
-                                          'neoId': link['target_neoId'],'title':link['target_name']}
+                                          'neoId': link['target_neoId'], 'title': link['target_name']}
                                 new_states[state_num]['path'].append([source, link['name'], target])
-                        # else :
-                        #     value = state['header']['score'] * score
-                        #     question = state['header']['name'] + link['name']
-                        #     if question not in true_question:
-                        #          true_question[question] = value
-                        #     else:
-                        #         if value > true_question[question]:
-                        #             true_question[question] = value
-                    elif score >= threshold:
-                        value = state['header']['score'] * score
-                        question = state['header']['name'] + '的' + link['name'] + '是什么'
-                        if question not in true_question:
-                             true_question[question] = value
-                        else:
-                            if value > true_question[question]:
-                                true_question[question] = value
-        states += new_states
-    for state in states:
-        if state['header'] is not None:
-            if 'score' in state['header']:
-                del state['header']['score']
-    if true_question is not None:
-        true_question = list(sorted(true_question.items(),key = lambda x:x[1],reverse=True))
-        for question in true_question:
-            questionlist.append(question[0])
-
-    # 如果没有找到答案，则选择标注了头实体的各个属性，提取头实体的属性中的文本内容，从文本中选择答案;改进：取前5个实体来抽取答案，后面的可能性不大
-    # logging.info('states:' + json.dumps(states, ensure_ascii=False))
-    if all(state['path'] == [] for state in states) and len(questionlist) == 0:
-        # print 'search candidate answers from nodes'
-        visited_states = set()
-        entity_count = 0 #已抽取实体计数
-        for state in states:
-            candidate_answer = ["", "", 0]  # 0:attribute name; 1:answer; 2:score
-            attri_value_list = []
-            if (state['header'] is not None) and (state['available_words'] != []) and (state['header']['neoId'] not in visited_states) and entity_count<=5:
-                visited_states.add(state['header']['neoId'])
-                entity_count += 1
-                for attribute in state['header'].keys():
-                    if attribute not in config.not_extract_attributes:
-                        attri_value = state['header'][attribute]
-                        # res = owlSubServers.answer_selection(str(''.join(state['available_words'])), str(attri_value))
-                        attri_value_list.append(attri_value)
-                logging.info('entity name: '+state['header']['name'])
-                res = attributeMatch.answer_selection_by_TFIDF_allAttribute_word2vec_hasmostword(state['available_words'], attri_value_list, tfidf_threshold=threshold_3) #默认返回3条答案，可以通过answer_num设置
-
-                if res is not None:
-                    # print 'answer exists.',res
-                    answer = res['answer'].decode('unicode-escape')
-                    point = float(res['point'])
-                    # candidate_answer[0] = attribute
-                    candidate_answer[1] = answer
-                    candidate_answer[2] = point
-                    answer = candidate_answer[1]
-                    abstract = answer if len(answer) < 10 else answer[:10] + '...'
-                    new_path = [step for step in state['path']]
-                    source = {'name': state['header']['name'], 'category': state['header']['category'],
-                              'neoId': state['header']['neoId']}
-                    target = {'name': abstract, 'category': '实体描述文本', 'neoId': None, 'ans_from_desc': answer}
-                    new_path.append([source, '候选答案', target])
-                    new_score = state['score'] + candidate_answer[2]
-                    states.append(
-                        {'header': state['header'], 'tailer': target, 'available_words': [], 'path': new_path,
-                         'score': new_score})
-    # res = textSearch.find_answer_in_text_bank(seg_list)
-    # if res is not None:
-            # answer = res['answer'].decode('unicode-escape') 测试
-            # point = float(res['point'])
-            # for question in true_question:
-            #    print 'candidate answers from nodes:',question[1],question[0]
-            # print 'candidate answers from text:',point  # ,answer
-    # 对问句匹配不到任意一个实体，进行全文检索
-    if all([state['header']==None for state in states]):
-        res = textSearch.find_answer_in_text_bank(seg_list)
-        # logging.info('res:' + json.dumps(res, encoding='utf-8', ensure_ascii=False))
-        candidate_answer = ["", "", 0]  # 0:attribute name; 1:answer; 2:score
-        if res is not None:
-            answer = res['answer'].decode('unicode-escape')
-            point = float(res['point'])
-            # candidate_answer[0] = attribute
-            candidate_answer[1] = answer
-            candidate_answer[2] = point
-            answer = candidate_answer[1]
-            abstract = answer if len(answer) < 10 else answer[:20] + '...'
-            new_path = []
-            global out_question
-            source = {'name': '知识库检索问题', 'category': '文本检索','neoId': None, '问题': out_question}
-            target = {'name': abstract, 'category': '文本检索答案', 'neoId': None, 'ans_from_desc': answer}
-            new_path.append([source, '候选答案', target])
-            new_score = state['score'] + candidate_answer[2]
-            states.append(
-                {'header': source, 'tailer': target, 'available_words': [], 'path': new_path,
-                 'score': new_score})
-    # logging.info('states:' + json.dumps(states, ensure_ascii=False))
-    # 选择获取最高评分的那些路径
-    max_states = []
-    for state in states:
-        if (state['header'] is not None):
-            if (max_states == []) or (state['score'] > max_states[0]['score']):
-                max_states = [state]
-            elif (state['score'] == max_states[0]['score']):
-                if (state['score'] == 1) and (
-                    len(state['available_words']) < len(max_states[0]['available_words'])):  # 在只识别到了实体的状态里，优先选择最长匹配到的实体
-                    max_states = [state]
-                else:
-                    max_states.append(state)
-    entities = [state['header'] for state in max_states if state['header'] is not None]
-    neoid_list = []
-    unique_entities = []
-    for entity in entities:
-        if entity['neoId'] not in neoid_list:
-            neoid_list.append(entity['neoId'])
-            unique_entities.append(entity)
-    # logging.info('max_states:' + json.dumps(max_states, ensure_ascii=False))
-    # logging.info('unique_entities:' + json.dumps(unique_entities, ensure_ascii=False))
-    if (max_states == []) or (max_states[0]['score'] == 1):  # 只识别到了实体
-      if len(questionlist) != 0:  # 没有完全匹配的实体和关系
-        return {'ents': unique_entities, 'path': [],'question':questionlist}
-      else :
-        return {'ents': unique_entities, 'path': []}
+            states += new_states
+    if count > 0:
+        return owlNeo4j.max_state(states)
+    if len(questionlist) != 0:  # 存在可匹配的相似问题
+        return  {'question':questionlist}
+    # elif any(state['path'] != [] for state in states): # 存在完全匹配的问题
+    #     return  owlNeo4j.max_state(states)
     else:
-        paths = [state['path'] for state in max_states if state['header'] == entities[0]]
-        return {'ents': [entities[0]], 'path': paths[0]}
+        answer = answer_from_attribute(states,threshold_3)
+        if answer is not False:  # 能从属性值中找到相似语句
+            return answer
+        else:
+            length = len(''.join(seg_list))
+            name_list = ['']
+            name_sum = 0
+            for state in states:
+                if state['header'] != None:
+                    # logging.info('test' + state['header']['name'] + 'namesum' + str(name_sum))
+                    if all((owlNeo4j.levenshtein(name, state['header']['name'])) < threshold_4 for name in name_list):
+                        name_sum += len(state['header']['name'])
+                        logging.info('namesum' + str(name_sum))
+                        name_list.append(state['header']['name'])
+            if all(state['header'] == None for state in states) or (((float(name_sum) / length) < threshold_4)):
+                return answer_from_context(seg_list)
+            else:
+                max_states = []
+                max_score = 0
+                for state in states:
+                    if state['score'] > max_score:
+                        max_score = state['score']
+                for state in states:
+                    if state['score'] == max_score:
+                        max_states.append(state)
+                entities = [state['header'] for state in max_states if state['header'] is not None]
+                neoid_list = []
+                unique_entities = []
+                score_map = {}
+                for entity in entities:
+                    if entity['neoId'] != None:
+                        if 'score' in entity:
+                            if entity['neoId'] not in score_map:
+                                score_map[entity['neoId']] = entity['score']
+                            else:
+                                if score_map[entity['neoId']] < entity['score']:
+                                    score_map[entity['neoId']] = entity['score']
+                entities = sorted(entities, key=lambda x: score_map[x['neoId']], reverse=True)
+                for entity in entities:
+                    if entity['neoId'] not in neoid_list:
+                            # entity['neoId'] = None
+                        neoid_list.append(entity['neoId'])
+                        del entity['score']
+                        unique_entities.append(entity)
+                # logging.info('max_states:' + json.dumps(max_states, ensure_ascii=False))
+                # logging.info('unique_entities:' + json.dumps(unique_entities, ensure_ascii=False))
+                # print "max:",max_states[0]['score']
+                # if (max_states == []) or (max_states[0]['score'] == 1):  # 只识别到了实体
+                #     if len(questionlist) != 0:  # 存在不完全匹配的实体和关系
+                #         return {'ents': unique_entities, 'path': [], 'question': questionlist}
+                #     else:
+                return {'ents': unique_entities, 'path': []}  # 只存在实体（单一或多个）
+                # else:
+                #     paths = [state['path'] for state in max_states if state['header'] == entities[0]]
+                #     return {'ents': [entities[0]], 'path': paths[0]}  # 1、（实体，关系，实体）；2、从属性值里找答案；3、全文检索
+
+    # 对问句匹配不到任意一个实体，进行全文检索
+
 # 按比较型问题
 def autocom(question):
     namelist = []
@@ -713,7 +764,296 @@ def autoseq(question):
             return 0
     else:
         return 0
+#动态规划1 question
+def dynamic_planning_question(seg_list):
+    threshold = 0.6  # 向量相似度匹配的状态转移阈值
+    threshold_2 = 0.3  # 关系相似度（编辑距离）的转移阈值
+    threshold_3 = 0.4  # 文本答案选择匹配的状态转移阈值
+    threshold_4 = 0.6  # 在只查找到实体的情况下，实体名长度占问题长度的比例转移阈值
+    true_question = {}
+    questionlist = []
+    states = []
+    caches = {}
+    label = 1
+    for word in seg_list:
+        new_states = []
+        states.append({'header': None, 'tailer': None, 'available_words': [], 'path': [], 'score': 0})
+        for state in states:
+            state['available_words'].append(word)
+            # 对于START状态
+            if (state['header'] is None):
+                entity_name = "".join(state['available_words'])
+                same_name_entity_list = owlNeo4j.get_entity_list_by_name(entity_name)
+                for entity in same_name_entity_list:
+                    new_states.append({'header': entity, 'tailer': None, 'available_words': [], 'path': [], 'score': 1})
+            # 对于非START状态
+            else:
+                if state['tailer'] is None:
+                    source = {'name': state['header']['name'], 'category': state['header']['category'],
+                              'neoId': state['header']['neoId']}
+                else:
+                    source = state['tailer']
+                if source['neoId'] is None:  # neoId is None 意味着路径走到了一个不可跳转的状态
+                    continue
+                if source['neoId'] not in caches:  # 整理这个实体的关系与属性集，加入到缓存中等待使用
+                    caches[source['neoId']] = []
+                    relations = owlNeo4j.get_oneway_related_entities_by_id(source['neoId'])
+                    for relation in relations:  # 添加关系
+                        caches[source['neoId']].append(relation)
+                    props = owlNeo4j.get_entity_info_by_id(source['neoId'])
+                    for prop in props:  # 添加属性，如果已经有同名关系出现，则该属性不添加
+                        if any(prop == relation['name'] for relation in caches[source['neoId']]):
+                            continue
+                        flag = 0
+                        if prop in keyword_list:
+                            content = props[prop]
+                            for sequence in sequence_list:
+                                if sequence[0] in content:
+                                    target_sequence = sequence
+                                    flag = 1
+                                    break
+                        if flag == 1:
+                            num = 0
+                            id = 0
+                            for i in range(len(target_sequence)):
+                                num += 1
+                                if target_sequence[i] not in content:
+                                    num = num - 1
+                                    break
+                            for i in range(num):
+                                if i < num - 1:
+                                    start = content.index(target_sequence[i])
+                                    end = content.index(target_sequence[i + 1])
+                                    # target_content = content[start:end] if (end-start) <= 10 else content[start:start+10]+'...'
+                                    caches[source['neoId']].append(
+                                        {'name': prop, 'target_category': '属性值', 'target_name': content[start:end],
+                                         'target_neoId': 100000 + id})
+                                    id += 1
+                                else:
+                                    start = content.index(target_sequence[i])
+                                    # target_content = content[start:] if len(content[start:]) <= 10 else content[start:start+10]+'...'
+                                    caches[source['neoId']].append(
+                                        {'name': prop, 'target_category': '属性值', 'target_name': content[start:],
+                                         'target_neoId': 100000 + id})
+                                    id += 1
+                        else:
+                            # target_content = str(props[prop]) if len(str(props[prop])) <= 10 else str(props[prop])[0:10]+'...'
+                            caches[source['neoId']].append(
+                                {'name': prop, 'target_category': '属性值', 'target_name': props[prop],
+                                 'target_neoId': None})
+                # 对于所有关系属性逐个进行相似度匹配, 大于阈值就进行状态转移
+                link2state_map = {}
+                for link in caches[source['neoId']]:
+                    score = serviceWord2vec.get_similarity(state['available_words'], list(jieba.cut(link['name'])))
+                    if state['available_words'] == list(jieba.cut(link['name'])):
+                        score = 1.0
+                    if score >= threshold:
+                        if owlNeo4j.levenshtein(link['name'], ''.join(state['available_words'])) >= threshold_2 or (
+                                u'是什么' == ''.join(state['available_words'])):
+                            value = state['header']['score'] * score
+                            question = state['header']['name'] + '的' + link['name'] + '是什么'
+                            if question not in true_question:
+                                true_question[question] = value
+                            else:
+                                if value > true_question[question]:
+                                    true_question[question] = value
+        states += new_states
+    if true_question is not None:
+        true_question = list(sorted(true_question.items(), key=lambda x: x[1], reverse=True))
+        for question in true_question:
+            questionlist.append(str(label) + '.' + question[0])
+            label += 1
+    return questionlist
 
+#动态规划2 answer
+def dynamic_planning_answer(seg_list):
+    threshold = 0.6  # 向量相似度匹配的状态转移阈值
+    threshold_2 = 0.3  # 关系相似度（编辑距离）的转移阈值
+    threshold_3 = 0.4  # 文本答案选择匹配的状态转移阈值
+    threshold_4 = 0.6  # 在只查找到实体的情况下，实体名长度占问题长度的比例转移阈值
+    true_question = {}
+    questionlist = []
+    states = []
+    caches = {}
+    seg_list = seg_list[1:]
+    for word in seg_list:
+        logging.info("seg_list:" + '/'.join(seg_list))
+        new_states = []
+        states.append({'header': None, 'tailer': None, 'available_words': [], 'path': [], 'score': 0})
+        for state in states:
+            state['available_words'].append(word)
+            # 对于START状态
+            if (state['header'] is None):
+                entity_name = "".join(state['available_words'])
+                same_name_entity_list = owlNeo4j.get_entity_list_by_name(entity_name)
+                for entity in same_name_entity_list:
+                    new_states.append(
+                        {'header': entity, 'tailer': None, 'available_words': [], 'path': [], 'score': 1})
+            # 对于非START状态
+            else:
+                if state['tailer'] is None:
+                    source = {'name': state['header']['name'], 'category': state['header']['category'],
+                              'neoId': state['header']['neoId']}
+                else:
+                    source = state['tailer']
+                if source['neoId'] is None:  # neoId is None 意味着路径走到了一个不可跳转的状态
+                    continue
+                if source['neoId'] not in caches:  # 整理这个实体的关系与属性集，加入到缓存中等待使用
+                    caches[source['neoId']] = []
+                    relations = owlNeo4j.get_oneway_related_entities_by_id(source['neoId'])
+                    for relation in relations:  # 添加关系
+                        caches[source['neoId']].append(relation)
+                    props = owlNeo4j.get_entity_info_by_id(source['neoId'])
+                    for prop in props:  # 添加属性，如果已经有同名关系出现，则该属性不添加
+                        if any(prop == relation['name'] for relation in caches[source['neoId']]):
+                            continue
+                        flag = 0
+                        if prop in keyword_list:
+                            content = props[prop]
+                            for sequence in sequence_list:
+                                if sequence[0] in content:
+                                    target_sequence = sequence
+                                    flag = 1
+                                    break
+                        if flag == 1:
+                            num = 0
+                            id = 0
+                            for i in range(len(target_sequence)):
+                                num += 1
+                                if target_sequence[i] not in content:
+                                    num = num - 1
+                                    break
+                            for i in range(num):
+                                if i < num - 1:
+                                    start = content.index(target_sequence[i])
+                                    end = content.index(target_sequence[i + 1])
+                                    # target_content = content[start:end] if (end-start) <= 10 else content[start:start+10]+'...'
+                                    caches[source['neoId']].append(
+                                        {'name': prop, 'target_category': '属性值', 'target_name': content[start:end],
+                                         'target_neoId': 100000 + id})
+                                    id += 1
+                                else:
+                                    start = content.index(target_sequence[i])
+                                    # target_content = content[start:] if len(content[start:]) <= 10 else content[start:start+10]+'...'
+                                    caches[source['neoId']].append(
+                                        {'name': prop, 'target_category': '属性值', 'target_name': content[start:],
+                                         'target_neoId': 100000 + id})
+                                    id += 1
+                        else:
+                            # target_content = str(props[prop]) if len(str(props[prop])) <= 10 else str(props[prop])[0:10]+'...'
+                            caches[source['neoId']].append(
+                                {'name': prop, 'target_category': '属性值', 'target_name': props[prop],
+                                 'target_neoId': None})
+                # 对于所有关系属性逐个进行相似度匹配, 大于阈值就进行状态转移
+                link2state_map = {}
+                for link in caches[source['neoId']]:
+                    score = serviceWord2vec.get_similarity(state['available_words'], list(jieba.cut(link['name'])))
+                    if state['available_words'] == list(jieba.cut(link['name'])):
+                        score = 1.0
+                    if score == 1.0 and state['header']['score'] == 1.0:
+                        # count += 1
+                        # 如果之前没添加过同名关系，直接进行状态转移，记录跳转路径
+                        if link['name'] not in link2state_map:
+                            new_path = [step for step in state['path']]  # 用于处理多跳问题
+                            if type(link['target_name']) == str and len(link['target_name']) > 10:
+                                name = link['target_name'][0:10] + '...'
+                            else:
+                                name = link['target_name']
+                            target = {'name': name, 'category': link['target_category'],
+                                      'neoId': link['target_neoId'], 'title': link['target_name']}
+                            new_path.append([source, link['name'], target])
+                            new_score = state['score'] * (1 + score - threshold)
+                            new_states.append(
+                                {'header': state['header'], 'tailer': target, 'available_words': [],
+                                 'path': new_path,
+                                 'score': new_score})
+                            link2state_map[link['name']] = len(new_states) - 1
+                        # 如果之前已经添加过一个同名关系，说明此关系是多值类(比如：知名校友)，直接把此关系追加到同名关系上
+                        else:
+                            state_num = link2state_map[link['name']]
+                            new_tailer = new_states[state_num]['tailer'].copy()
+                            new_tailer['neoId'] = None  # 如果此关系是多值类，则它不能再进行状态转移，所以把tailer neoId标记为None
+                            new_states[state_num]['tailer'] = new_tailer
+                            if type(link['target_name'] == str) and len(link['target_name']) > 10:
+                                name = link['target_name'][0:10] + '...'
+                            else:
+                                name = link['target_name']
+                            target = {'name': name, 'category': link['target_category'],
+                                      'neoId': link['target_neoId'], 'title': link['target_name']}
+                            new_states[state_num]['path'].append([source, link['name'], target])
+        states += new_states
+    return states
+
+#从属性值中抽取答案(word2vec+tf-idf)
+def answer_from_attribute(states,threshold_3):
+    visited_states = set()
+    attri_states = []
+    entity_count = 0  # 已抽取实体计数
+    for state in states:
+        candidate_answer = ["", "", 0]  # 0:attribute name; 1:answer; 2:score
+        attri_value_list = []
+        if (state['header'] is not None) and (state['available_words'] != []) and (
+                state['header']['neoId'] not in visited_states) and entity_count <= 5:
+            visited_states.add(state['header']['neoId'])
+            entity_count += 1
+            for attribute in state['header'].keys():
+                if attribute not in config.not_extract_attributes:
+                    attri_value = str(state['header'][attribute])
+                    # res = owlSubServers.answer_selection(str(''.join(state['available_words'])), str(attri_value))
+                    attri_value_list.append(attri_value)
+            logging.info('entity name: ' + state['header']['name'])
+            res = attributeMatch.answer_selection_by_TFIDF_allAttribute_word2vec_hasmostword(state['available_words'],
+                                                                                             attri_value_list,
+                                                                                             tfidf_threshold=threshold_3)  # 默认返回3条答案，可以通过answer_num设置
+            if res is not None:
+                # print 'answer exists.',res
+                answer = res['answer'].decode('unicode-escape')
+                point = float(res['point'])
+                # candidate_answer[0] = attribute
+                # candidate_answer[1] = answer
+                candidate_answer[2] = point
+                # answer = candidate_answer[1]
+                abstract = answer if len(answer) < 10 else answer[:10] + '...'
+                new_path = []
+                source = {'name': state['header']['name'], 'category': state['header']['category'],
+                          'neoId': state['header']['neoId']}
+                target = {'name': abstract, 'category': '实体描述文本', 'neoId': None, 'ans_from_desc': answer}
+                new_path.append([source, '候选答案', target])
+                new_score = candidate_answer[2]
+                attri_states.append(
+                    {'header': state['header'], 'tailer': target, 'available_words': [], 'path': new_path,
+                     'score': new_score})
+    if len(attri_states) != 0:
+        return owlNeo4j.max_state(attri_states)
+    else:
+        return False
+
+#全文检索
+def answer_from_context(seg_list):
+    text_states = []
+    res = textSearch.find_answer_in_text_bank(seg_list)
+    # logging.info('res:' + json.dumps(res, encoding='utf-8', ensure_ascii=False))
+    candidate_answer = ["", "", 0]  # 0:attribute name; 1:answer; 2:score
+    if res is not None:
+        answer = res['answer'].decode('unicode-escape')
+        point = float(res['point'])
+        # candidate_answer[0] = attribute
+        # candidate_answer[1] = answer
+        candidate_answer[2] = point
+        # answer = candidate_answer[1]
+        abstract = answer if len(answer) < 10 else answer[:20] + '...'
+        new_path = []
+        global out_question
+        source = {'name': '知识库检索问题', 'category': '文本检索', 'neoId': None, '问题': out_question}
+        target = {'name': abstract, 'category': '文本检索答案', 'neoId': None, 'ans_from_desc': answer}
+        new_path.append([source, '候选答案', target])
+        new_score =  candidate_answer[2]
+        text_states.append(
+            {'header': source, 'tailer': target, 'available_words': [], 'path': new_path,
+             'score': new_score})
+        return owlNeo4j.max_state(text_states)
+    else:
+        return False
 
 # 分词
 def segment(sentence):

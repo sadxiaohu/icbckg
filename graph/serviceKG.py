@@ -26,6 +26,7 @@ num_dict = {u'第一': 0, u'第二': 1, u'第三': 2, u'第四': 3, u'第五': 4
            u'第六': 5, u'第七': 6, u'第八': 7, u'第九': 8, u'第十': 9,
            u'第十一': 10, u'第十二': 11, u'第十三': 12, u'第十四': 13, u'第十五': 14,u'最高':0}
 queryword_list = [u'哪个',u'哪一个',u'怎么',u'怎么办',u'谁',u'如何',u'哪些',u'多少',u'为什么',u'怎么样',u'哪里']
+num_list = {u'1.',u'2.',u'3.',u'4.',u'5',u'6',u'7',u'8',u'9',u'10'}
 for key in num_dict:
     jieba.add_word(key)
 def knowledge_graph(question, neoid=None, autopick=False):#autopick表示是否开启自动选择
@@ -33,6 +34,10 @@ def knowledge_graph(question, neoid=None, autopick=False):#autopick表示是否�
     if neoid is not None:
         return decorate(neoid, style='BASIC')
     question.strip()
+    if any(num in question for num in num_list):
+        switch = True
+    else:
+        switch = False
     for queryword in queryword_list:
         if queryword in question:
             question = question.replace(queryword,'')
@@ -104,25 +109,22 @@ def knowledge_graph(question, neoid=None, autopick=False):#autopick表示是否�
           if result != 0 :
               return decorate(result,style='QA')
     # 进行中文问答
-    qa_result = serviceQA.chinese_qa(question)
+    qa_result = serviceQA.chinese_qa(question,switch)
     logging.info("qa_result:"+json.dumps(qa_result, encoding='utf-8', ensure_ascii=False))
     if (qa_result is None):
         return None
     # 如果是实体检索
-    if 'question' in qa_result:
+    if 'question' in qa_result:  # 如果存在（实体，关系）对的相似问题
         return decorate(qa_result['question'],style='QUE')
-    if len(qa_result['path']) == 0:
-        if len(qa_result['ents']) == 0:#不存在严格匹配的实体，开启模糊查询
-            return decorate(owlNeo4j.get_entity_list_by_fuzzy_name(question)[:20], style='SNET')
-        elif autopick or (len(qa_result['ents']) == 1):  # 如果开启自动选择或不存在同名实体
+    if len(qa_result['path']) == 0:  # 如果path为空，即不存在关系
+        if autopick or (len(qa_result['ents']) == 1):  # 如果开启自动选择或只存在一个实体
             return decorate(qa_result['ents'][0]['neoId'], style='BASIC')
-        else:  # 如果存在同名实体且没开启自动选择
+        else:  # 如果存在多个实体且没开启自动选择
             return decorate(qa_result['ents'], style='SNET')
-    # 如果是问答检索
     else:
         if qa_result['ents'][0]['neoId'] == None:
-            return decorate(qa_result, style='TS')  #全文信息检索
-        return decorate(qa_result, style='QA')
+            return decorate(qa_result, style='TS')  # 全文信息检索
+        return decorate(qa_result, style='QA')  # 从属性里找答案，或者有匹配的（实体，属性，实体）
 
 
 # 针对不同的需求配置不同的结果json文件
@@ -153,10 +155,10 @@ def decorate(data, style,question = None):
         result = bloom(data['ents'][0]['neoId'], path=data['path'])
         result['answer'] = answer_generate(data['path'])
         return result
-    if style == 'QUE': #多问题模糊匹配
+    if style == 'QUE':  # 多问题模糊匹配
         result = {'questions': data,'answer': '请在参考问题列表中选择'}
         return result
-    if style == 'TS': #全文信息检索
+    if style == 'TS':  # 全文信息检索
         result = bloom('6', path=data['path'][0])
         result['answer'] = answer_generate(data['path'])
         return result

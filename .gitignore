@@ -4,3 +4,5 @@ idea
 *.pyc
 static/log/
 baike.vectors.bin
+questionClassification/log_word2id.pkl
+questionClassification/logistic.pkl

@@ -533,8 +533,10 @@ def answer_selection_by_TFIDF_allAttribute_word2vec_hasmostword(seg_list, attri_
                 if head_word in result_sentence:
                     result_sentence = result_sentence.replace(head_word, '')
             max_score = sentence_and_weight[0][1]
-        logging.info('answer:'+result_sentence)
-        logging.info('point:' + str(max_score))
+        else:
+            return None
+        # logging.info('answer:'+result_sentence)
+        # logging.info('point:' + str(max_score))
     except Exception as e:
         logging.info(u'发生异常：', Exception)
         return None
