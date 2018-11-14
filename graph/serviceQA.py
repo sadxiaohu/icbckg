@@ -11,6 +11,7 @@ import sys
 import serviceKG
 import json
 import textSearch
+import copy
 reload(sys)
 sys.setdefaultencoding('utf8')
 keyword_list = [u'开通流程',u'申办流程',u'办理流程',u'业务流程',u'开办流程',u'操作流程',u'开办条件',u'使用窍门',u'特色优势',u'操作指南',u'操作步骤','“',',']
@@ -72,13 +73,16 @@ def automata(seg_list,switch,question):
         multi_question = multi_question[:-1]
     if len(multi_question) > 1:
         return {'question': multi_question}
-    if switch is False:
+    if switch is False:  # 表示未经处理的初始问题
         count = 0
         label = 1
         for word in seg_list:
             new_states = []
             states.append({'header': None, 'tailer': None, 'available_words': [], 'path': [], 'score': 0})
+            origin_states = []
             for state in states:
+                if state['available_words'] != []:
+                       origin_states.append({'header':state['header'],'tailer': None, 'available_words': [], 'path': [], 'score': 0})
                 state['available_words'].append(word)
                 # 对于START状态
                 if (state['header'] is None):
@@ -143,7 +147,6 @@ def automata(seg_list,switch,question):
                                     {'name': prop, 'target_category': '属性值', 'target_name': props[prop],
                                      'target_neoId': None})
                     # 对于所有关系属性逐个进行相似度匹配, 大于阈值就进行状态转移
-                    link2state_map = {}
                     for link in caches[source['neoId']]:
                         score = serviceWord2vec.get_similarity(state['available_words'], list(jieba.cut(link['name'])))
                         if state['available_words'] == list(jieba.cut(link['name'])):
@@ -158,6 +161,7 @@ def automata(seg_list,switch,question):
                                 else:
                                     if value > true_question[question]:
                                         true_question[question] = value
+            new_states += origin_states
             states += new_states
         if true_question is not None:
             true_question = list(sorted(true_question.items(), key=lambda x: x[1], reverse=True))
@@ -281,7 +285,7 @@ def automata(seg_list,switch,question):
     #     return  owlNeo4j.max_state(states)
     else:
         answer = answer_from_attribute(states,threshold_3)
-        if answer is not False:  # 能从属性值中找到相似语句
+        if answer is not False:
             return answer
         else:
             length = len(''.join(seg_list))
@@ -294,6 +298,7 @@ def automata(seg_list,switch,question):
                         name_sum += len(state['header']['name'])
                         logging.info('namesum' + str(name_sum))
                         name_list.append(state['header']['name'])
+            print 'name_sum',name_sum,'length',length
             if all(state['header'] == None for state in states) or (((float(name_sum) / length) < threshold_4)):
                 return answer_from_context(seg_list)
             else:
@@ -547,7 +552,10 @@ def autoinduce(question):
                allnodes.append(new_node1)
         if len(allnodes) >= (num_dict[num]+1):
             sortlist = [0 for x in range(len(allnodes))]
-            result_list = sorted(allnodes,key=lambda x : float(x[related_word].strip('%')),reverse=True)
+            if (u'低' in num) or (u'小' in num):
+                result_list = sorted(allnodes,key=lambda x : float(x[related_word].strip('%')))
+            else:
+                result_list = sorted(allnodes, key=lambda x: float(x[related_word].strip('%')), reverse=True)
             for number in range(1,len(result_list)):
                 if float(result_list[number][related_word].strip('%')) == float(result_list[number-1][related_word].strip('%')):
                      sortlist[number] = sortlist[number-1]

@@ -167,7 +167,7 @@ def levenshtein(string1,string2):
             distance_matrix[i][j] = min(insertion,deletion,substitution)
     # print(distance_matrix[str1_length-1][str2_length-1])
     # print(1-0.8)由于浮点数字精度问题，采用四舍五入
-    return round(1-round(distance_matrix[str1_length-1][str2_length-1])/max(len(string1),len(string2)),2)
+    return round(1-float(distance_matrix[str1_length-1][str2_length-1])/max(len(string1),len(string2)),2)
 
 #取出得分最大的一组（或一个）state
 def max_state(states):
