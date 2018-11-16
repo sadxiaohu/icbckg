@@ -1,0 +1,174 @@
+{
+    "name": "问题",
+    "label": {},
+    "itemStyle": {},
+    "children": [
+        {
+            "name": "一般问题",
+            "label": {},
+            "itemStyle": {},
+            "children": [
+                {
+                    "name": "单个问题划分为多个子问题",
+                    "label": {},
+                    "itemStyle": {},
+                    "children": [
+                        {
+                            "name": "举例：牡丹中青旅卡牡丹亚泰卡的发行范围联名单位",
+                            "label": {},
+                            "itemStyle": {},
+                            "children": [
+                                
+                            ]
+                        },
+                        {
+                            "name": "单个问题",
+                            "label": {},
+                            "itemStyle": {},
+                            "children": [
+                                {
+                                    "name": "完全匹配：知识库中能找到对应实体和关系",
+                                    "label": {},
+                                    "itemStyle": {},
+                                    "children": [
+                                        {
+                                            "name": "举例：小企业网贷通的服务对象有哪些",
+                                            "label": {},
+                                            "itemStyle": {},
+                                            "children": [
+                                                
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "name": "属性值提取：知识库中能找到实体，答案存在某个属性值中",
+                                    "label": {},
+                                    "itemStyle": {},
+                                    "children": [
+                                        {
+                                            "name": "举例：Android手机银行对手机有什么要求",
+                                            "label": {},
+                                            "itemStyle": {},
+                                            "children": [
+                                                
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "name": "全文检索：知识库中不包含问句中的实体或实体名长度相对问句长度过短",
+                                    "label": {},
+                                    "itemStyle": {},
+                                    "children": [
+                                        {
+                                            "name": "举例：密码输入三次错误怎么办",
+                                            "label": {},
+                                            "itemStyle": {},
+                                            "children": [
+                                                
+                                            ]
+                                        }
+                                    ]
+                                },
+                                {
+                                    "name": "实体列表",
+                                    "label": {},
+                                    "itemStyle": {},
+                                    "children": [
+                                        {
+                                            "name": "举例：牡丹亚泰卡中青旅卡",
+                                            "label": {},
+                                            "itemStyle": {},
+                                            "children": [
+                                                
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "规则判断：比较型问题",
+            "label": {},
+            "itemStyle": {},
+            "children": [
+                {
+                    "name": "举例：1年期整存整取存款比2年期整存整取存款高多少",
+                    "label": {},
+                    "itemStyle": {},
+                    "children": []
+                }
+            ]
+        },
+        {
+            "name": "规则判断：归纳型问题",
+            "label": {},
+            "itemStyle": {},
+            "children": [
+                {
+                    "name": "举例：定期存款产品利率最高的",
+                    "label": {},
+                    "itemStyle": {},
+                    "children": []
+                }
+            ]
+        },
+        {
+            "name": "规则判断：检索型问题",
+            "label": {},
+            "itemStyle": {},
+            "children": [
+                {
+                    "name": "举例：定期存款产品利率高于2.6%的",
+                    "label": {},
+                    "itemStyle": {},
+                    "children": []
+                }
+            ]
+        },
+        {
+            "name": "分类器：流程性问题",
+            "label": {},
+            "itemStyle": {},
+            "children": [
+                {
+                    "name": "举例：在办理B股证券业务开户时，到证券公司申请开通账户后,然后该怎么做",
+                    "label": {},
+                    "itemStyle": {},
+                    "children": []
+                }
+            ]
+        },
+        {
+            "name": "规则判断：按类别查询",
+            "label": {},
+            "itemStyle": {},
+            "children": [
+                {
+                    "name": "举例：c::定期存款",
+                    "label": {},
+                    "itemStyle": {},
+                    "children": []
+                }
+            ]
+        },
+        {
+            "name": "规则判断：按关系查询",
+            "label": {},
+            "itemStyle": {},
+            "children": [
+                {
+                    "name": "举例：r::服务对象",
+                    "label": {},
+                    "itemStyle": {},
+                    "children": []
+                }
+            ]
+        }
+    ]
+}
